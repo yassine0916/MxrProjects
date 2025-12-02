@@ -867,7 +867,7 @@ local function createModernUI()
     Subtitle.TextXAlignment = Enum.TextXAlignment.Left
     Subtitle.Parent = Header
 
-    -- زر الإغلاق الجديد (X)
+    -- زر الإغلاق الجديد (X) فقط
     local CloseButton = Instance.new("TextButton")
     CloseButton.Size = UDim2.new(0, 30, 0, 30)
     CloseButton.Position = UDim2.new(0.95, -30, 0.5, -15)
