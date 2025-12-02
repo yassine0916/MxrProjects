@@ -40,8 +40,6 @@ local AimKey = Enum.UserInputType.MouseButton2
 -- إعدادات الحركة
 local PlayerSpeed = 16
 local JumpPower = 50
-local OriginalWalkSpeed = 16
-local OriginalJumpPower = 50
 
 -- ألوان
 local ESPColor = Color3.fromRGB(0, 255, 255)
@@ -327,7 +325,7 @@ local function CreateFOVCircle()
 
     local Frame = Instance.new("Frame")
     Frame.Size = UDim2.new(0, FOVRadius * 2, 0, FOVRadius * 2)
-    Frame.Position = UDim2.new(0.5, -FOVRadius, 0.5, -FOVRadius) -- في المنتصف تماماً
+    Frame.Position = UDim2.new(0.5, -FOVRadius, 0.5, -FOVRadius)
     Frame.BackgroundTransparency = 1
     Frame.BorderSizePixel = 0
     Frame.Parent = FOVGui
@@ -352,7 +350,6 @@ end
 local function UpdateFOVCircle()
     if not FOVCircle then return end
     
-    -- تحديث اللون فقط، الموضع ثابت في المنتصف
     FOVCircle.Outline.Color = FOVColor
     
     if FOVCircleVisible and AimbotEnabled then
@@ -421,21 +418,11 @@ end
 local function InstantHeadLock(targetPart)
     if not targetPart or not Camera then return end
     
-    -- طريقة سريعة جداً للتركيز على الرأس
     local targetPosition = targetPart.Position
     local cameraPosition = Camera.CFrame.Position
     
-    -- حساب الاتجاه مباشرة
     local lookDirection = (targetPosition - cameraPosition).Unit
-    
-    -- ضبط الكاميرا فورياً
     Camera.CFrame = CFrame.new(cameraPosition, cameraPosition + lookDirection)
-    
-    -- طريقة إضافية لضمان الدقة
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        local humanoidRootPart = player.Character.HumanoidRootPart
-        humanoidRootPart.CFrame = CFrame.new(humanoidRootPart.Position, Vector3.new(targetPosition.X, humanoidRootPart.Position.Y, targetPosition.Z))
-    end
 end
 
 -- =============================================
@@ -444,11 +431,7 @@ end
 local function UpdateMovement()
     if player.Character and player.Character:FindFirstChild("Humanoid") then
         local humanoid = player.Character.Humanoid
-        
-        -- تحديث السرعة
         humanoid.WalkSpeed = PlayerSpeed
-        
-        -- تحديث قوة القفز
         humanoid.JumpPower = JumpPower
     end
 end
@@ -480,17 +463,11 @@ local function EnableFly()
         
         if not humanoid or not rootPart then return end
         
-        -- حفظ الجاذبية الأصلية
         OriginalGravity = workspace.Gravity
-        
-        -- جعل الجاذبية صفر للطيران
         workspace.Gravity = 0
         
-        -- تعطيل الجاذبية على الهيومانويد
         humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
         humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
-        
-        -- حفظ الوضعية الأصلية
         humanoid.PlatformStand = true
         
         local bodyVelocity = Instance.new("BodyVelocity")
@@ -513,7 +490,6 @@ local function EnableFly()
             local camera = workspace.CurrentCamera
             local moveDirection = Vector3.new(0, 0, 0)
             
-            -- تحكم بالطيران
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then
                 moveDirection = moveDirection + camera.CFrame.LookVector
             end
@@ -533,7 +509,6 @@ local function EnableFly()
                 moveDirection = moveDirection - Vector3.new(0, 1, 0)
             end
             
-            -- تحكم بالسرعة
             local flySpeed = 50
             if UserInputService:IsKeyDown(Enum.KeyCode.E) then
                 flySpeed = 100
@@ -555,12 +530,10 @@ local function DisableFly()
         FlyConnection = nil
     end
     
-    -- استعادة الجاذبية الأصلية
     if OriginalGravity then
         workspace.Gravity = OriginalGravity
     end
     
-    -- تنظيف الجسم المتحرك
     if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
         local rootPart = player.Character.HumanoidRootPart
         local bodyVelocity = rootPart:FindFirstChild("BodyVelocity")
@@ -569,7 +542,6 @@ local function DisableFly()
         end
     end
     
-    -- استعادة وضعية الهيومانويد
     if player.Character and player.Character:FindFirstChild("Humanoid") then
         local humanoid = player.Character.Humanoid
         humanoid.PlatformStand = false
@@ -579,114 +551,121 @@ local function DisableFly()
 end
 
 -- =============================================
--- وظائف توسيع الهيت بوكس المحسنة
+-- نظام توسيع الهيت بوكس المحسن بدون التباطؤ
 -- =============================================
-getgenv().HBE = false
+local HitboxEnabled = false
+local HitboxConnections = {}
 
-local function GetCharParent()
-    local charParent
-    repeat wait() until player.Character
-    for _, char in pairs(workspace:GetDescendants()) do
-        if string.find(char.Name, player.Name) and char:FindFirstChild("Humanoid") then
-            charParent = char.Parent
-            break
-        end
-    end
-    return charParent
-end
-
-pcall(function()
-    local mt = getrawmetatable(game)
-    setreadonly(mt, false)
-    local old = mt.__index
-    mt.__index = function(Self, Key)
-        if tostring(Self) == "HumanoidRootPart" and tostring(Key) == "Size" then
-            return Vector3.new(2,2,1)
-        end
-        return old(Self, Key)
-    end
-    setreadonly(mt, true)
-end)
-
-local CHAR_PARENT = GetCharParent()
-local HITBOX_BASE_SIZE = 15
-local HITBOX_SIZE = Vector3.new(HITBOX_BASE_SIZE, HITBOX_BASE_SIZE, HITBOX_BASE_SIZE)
-
+-- إصلاح النظام لتجنب التباطؤ
 local function UpdateHitboxSize()
-    local sizeValue = HITBOX_BASE_SIZE * HitboxSizeMultiplier
-    HITBOX_SIZE = Vector3.new(sizeValue, sizeValue, sizeValue)
+    return Vector3.new(15 * HitboxSizeMultiplier, 15 * HitboxSizeMultiplier, 15 * HitboxSizeMultiplier)
 end
 
-local function AssignHitboxes(targetPlayer)
-    if targetPlayer == player then return end
-
-    local hitbox_connection
-    hitbox_connection = RunService.RenderStepped:Connect(function()
-        local char = CHAR_PARENT:FindFirstChild(targetPlayer.Name)
-        if getgenv().HBE then
-            if char then
-                local targetPart = char:FindFirstChild((HitboxTarget == "الرأس" and "Head") or "HumanoidRootPart")
-                
-                if targetPart then
-                    UpdateHitboxSize()
-                    
-                    if targetPart.Size ~= HITBOX_SIZE or targetPart.Color ~= HitboxColor then
-                        targetPart.Size = HITBOX_SIZE
-                        targetPart.Color = HitboxColor
-                        targetPart.CanCollide = false
-                        targetPart.Transparency = 0.5
-                        targetPart.Material = Enum.Material.Neon
-                    end
-                end
-            end
-        else
-            if char then
-                local head = char:FindFirstChild("Head")
-                local root = char:FindFirstChild("HumanoidRootPart")
-                
-                if head then
-                    head.Size = Vector3.new(1, 1, 1)
-                    head.Transparency = 1
-                end
-                if root then
-                    root.Size = Vector3.new(2, 2, 1)
-                    root.Transparency = 1
-                end
-            end
-        end
-    end)
+-- نظام فعال لتغيير الهيت بوكس بدون تأخير
+local function ModifyHitbox(playerChar, enable)
+    if not playerChar then return end
     
-    HitboxConnections[targetPlayer] = hitbox_connection
+    local targetPart = playerChar:FindFirstChild(HitboxTarget == "الرأس" and "Head" or "HumanoidRootPart")
+    if not targetPart then return end
+    
+    if enable then
+        -- حفظ الخصائص الأصلية
+        if not targetPart:FindFirstChild("OriginalSize") then
+            local originalSize = Instance.new("Vector3Value")
+            originalSize.Name = "OriginalSize"
+            originalSize.Value = targetPart.Size
+            originalSize.Parent = targetPart
+        end
+        
+        if not targetPart:FindFirstChild("OriginalColor") then
+            local originalColor = Instance.new("Color3Value")
+            originalColor.Name = "OriginalColor"
+            originalColor.Value = targetPart.Color
+            originalColor.Parent = targetPart
+        end
+        
+        if not targetPart:FindFirstChild("OriginalTransparency") then
+            local originalTransparency = Instance.new("NumberValue")
+            originalTransparency.Name = "OriginalTransparency"
+            originalTransparency.Value = targetPart.Transparency
+            originalTransparency.Parent = targetPart
+        end
+        
+        if not targetPart:FindFirstChild("OriginalMaterial") then
+            local originalMaterial = Instance.new("StringValue")
+            originalMaterial.Name = "OriginalMaterial"
+            originalMaterial.Value = tostring(targetPart.Material)
+            originalMaterial.Parent = targetPart
+        end
+        
+        -- تطبيق الهيت بوكس الموسع
+        targetPart.Size = UpdateHitboxSize()
+        targetPart.Color = HitboxColor
+        targetPart.Transparency = 0.3
+        targetPart.Material = Enum.Material.Neon
+    else
+        -- استعادة الخصائص الأصلية
+        local originalSize = targetPart:FindFirstChild("OriginalSize")
+        local originalColor = targetPart:FindFirstChild("OriginalColor")
+        local originalTransparency = targetPart:FindFirstChild("OriginalTransparency")
+        local originalMaterial = targetPart:FindFirstChild("OriginalMaterial")
+        
+        if originalSize then
+            targetPart.Size = originalSize.Value
+            originalSize:Destroy()
+        else
+            targetPart.Size = Vector3.new(HitboxTarget == "الرأس" and 1 or 2, HitboxTarget == "الرأس" and 1 or 2, HitboxTarget == "الرأس" and 1 or 1)
+        end
+        
+        if originalColor then
+            targetPart.Color = originalColor.Value
+            originalColor:Destroy()
+        end
+        
+        if originalTransparency then
+            targetPart.Transparency = originalTransparency.Value
+            originalTransparency:Destroy()
+        else
+            targetPart.Transparency = 0
+        end
+        
+        if originalMaterial then
+            targetPart.Material = Enum.Material[originalMaterial.Value]
+            originalMaterial:Destroy()
+        end
+    end
 end
 
 local function InitializeHitboxes()
-    getgenv().HBE = HitboxEnabled
-    
+    -- إيقاف جميع الاتصالات السابقة
     for _, connection in pairs(HitboxConnections) do
         connection:Disconnect()
     end
     HitboxConnections = {}
     
     if HitboxEnabled then
+        -- اتصال واحد فقط لتحديث الهيت بوكس
+        local updateConnection = RunService.Heartbeat:Connect(function()
+            for _, otherPlayer in ipairs(Players:GetPlayers()) do
+                if otherPlayer ~= player and otherPlayer.Character then
+                    ModifyHitbox(otherPlayer.Character, true)
+                end
+            end
+        end)
+        
+        table.insert(HitboxConnections, updateConnection)
+        
+        -- تطبيق فوري على اللاعبين الحاليين
         for _, otherPlayer in ipairs(Players:GetPlayers()) do
-            if otherPlayer ~= player then
-                AssignHitboxes(otherPlayer)
+            if otherPlayer ~= player and otherPlayer.Character then
+                ModifyHitbox(otherPlayer.Character, true)
             end
         end
     else
+        -- استعادة الخصائص الأصلية
         for _, otherPlayer in ipairs(Players:GetPlayers()) do
             if otherPlayer ~= player and otherPlayer.Character then
-                local head = otherPlayer.Character:FindFirstChild("Head")
-                local root = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
-                
-                if head then
-                    head.Size = Vector3.new(1, 1, 1)
-                    head.Transparency = 1
-                end
-                if root then
-                    root.Size = Vector3.new(2, 2, 1)
-                    root.Transparency = 1
-                end
+                ModifyHitbox(otherPlayer.Character, false)
             end
         end
     end
@@ -795,7 +774,6 @@ local function UpdateESP()
                         local teamColor = GetTeamColor(targetPlayer)
                         
                         if valid then
-                            -- Box ESP
                             if Config.BoxESP then
                                 esp.Box.Position = boxPosition
                                 esp.Box.Size = boxSize
@@ -805,7 +783,6 @@ local function UpdateESP()
                                 esp.Box.Visible = false
                             end
                             
-                            -- Name ESP
                             if Config.NameESP then
                                 esp.Name.Position = Vector2.new(boxPosition.X + boxSize.X / 2, boxPosition.Y - 20)
                                 esp.Name.Text = targetPlayer.Name
@@ -815,7 +792,6 @@ local function UpdateESP()
                                 esp.Name.Visible = false
                             end
                             
-                            -- Distance ESP
                             if Config.DistanceESP then
                                 esp.Distance.Position = Vector2.new(boxPosition.X + boxSize.X / 2, boxPosition.Y + boxSize.Y + 5)
                                 esp.Distance.Text = tostring(distance) .. "م"
@@ -914,7 +890,7 @@ local function createModernUI()
     -- زر الفتح/الإغلاق الرئيسي
     OpenCloseButton = Instance.new("ImageButton")
     OpenCloseButton.Name = "MainToggle"
-    OpenCloseButton.Size = UDim2.new(0, 60, 0, 60) -- أصغر للهواتف
+    OpenCloseButton.Size = UDim2.new(0, 60, 0, 60)
     OpenCloseButton.Position = UDim2.new(0, 15, 0.5, -30)
     OpenCloseButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
     OpenCloseButton.Image = "http://www.roblox.com/asset/?id=118614421027521"
@@ -942,7 +918,7 @@ local function createModernUI()
     -- النافذة الرئيسية
     MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainPanel"
-    MainFrame.Size = UDim2.new(0.9, 0, 0.85, 0) -- نسبة مئوية للهواتف
+    MainFrame.Size = UDim2.new(0.9, 0, 0.85, 0)
     MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
     MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
     MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
@@ -970,7 +946,7 @@ local function createModernUI()
 
     -- رأس النافذة
     local Header = Instance.new("Frame")
-    Header.Size = UDim2.new(1, 0, 0, 45) -- أصغر للهواتف
+    Header.Size = UDim2.new(1, 0, 0, 45)
     Header.Position = UDim2.new(0, 0, 0, 0)
     Header.BackgroundColor3 = Color3.fromRGB(0, 100, 255)
     Header.BackgroundTransparency = 0.1
@@ -996,7 +972,7 @@ local function createModernUI()
     Title.Text = "MZ HUB"
     Title.TextColor3 = Color3.fromRGB(255, 255, 255)
     Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 18 -- أصغر للهواتف
+    Title.TextSize = 18
     Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.Parent = Header
 
@@ -1007,13 +983,13 @@ local function createModernUI()
     Subtitle.Text = "مركز التحكم المتكامل"
     Subtitle.TextColor3 = Color3.fromRGB(200, 200, 255)
     Subtitle.Font = Enum.Font.Gotham
-    Subtitle.TextSize = 10 -- أصغر للهواتف
+    Subtitle.TextSize = 10
     Subtitle.TextXAlignment = Enum.TextXAlignment.Left
     Subtitle.Parent = Header
 
     -- زر الإغلاق
     local CloseButton = Instance.new("ImageButton")
-    CloseButton.Size = UDim2.new(0, 25, 0, 25) -- أصغر للهواتف
+    CloseButton.Size = UDim2.new(0, 25, 0, 25)
     CloseButton.Position = UDim2.new(0.9, 0, 0.5, -12)
     CloseButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
     CloseButton.Image = "http://www.roblox.com/asset/?id=118614421027521"
@@ -1025,7 +1001,7 @@ local function createModernUI()
 
     -- زر Discord
     local DiscordButton = Instance.new("ImageButton")
-    DiscordButton.Size = UDim2.new(0, 25, 0, 25) -- أصغر للهواتف
+    DiscordButton.Size = UDim2.new(0, 25, 0, 25)
     DiscordButton.Position = UDim2.new(0.8, 0, 0.5, -12)
     DiscordButton.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
     DiscordButton.Image = "http://www.roblox.com/asset/?id=118614421027521"
@@ -1037,7 +1013,7 @@ local function createModernUI()
 
     -- تبويبات
     local TabsContainer = Instance.new("Frame")
-    TabsContainer.Size = UDim2.new(1, -20, 0, 35) -- أصغر للهواتف
+    TabsContainer.Size = UDim2.new(1, -20, 0, 35)
     TabsContainer.Position = UDim2.new(0, 10, 0, 50)
     TabsContainer.BackgroundTransparency = 1
     TabsContainer.Parent = MainFrame
@@ -1049,7 +1025,7 @@ local function createModernUI()
     ESPTab.Text = "👁️ ESP"
     ESPTab.TextColor3 = Color3.fromRGB(255, 255, 255)
     ESPTab.Font = Enum.Font.GothamBold
-    ESPTab.TextSize = 12 -- أصغر للهواتف
+    ESPTab.TextSize = 12
     ESPTab.Parent = TabsContainer
 
     local tabCorner = Instance.new("UICorner")
@@ -1091,7 +1067,7 @@ local function createModernUI()
 
     -- حاوية المحتوى
     local ContentContainer = Instance.new("Frame")
-    ContentContainer.Size = UDim2.new(1, -20, 1, -110) -- معدل للهواتف
+    ContentContainer.Size = UDim2.new(1, -20, 1, -110)
     ContentContainer.Position = UDim2.new(0, 10, 0, 95)
     ContentContainer.BackgroundTransparency = 1
     ContentContainer.Parent = MainFrame
@@ -1141,9 +1117,8 @@ local function createModernUI()
     VisualContent.Parent = ContentContainer
 
     -- محتوى تبويب ESP
-    -- بطاقة إعدادات ESP
     local ESPConfigCard = Instance.new("Frame")
-    ESPConfigCard.Size = UDim2.new(1, 0, 0, 180) -- أصغر للهواتف
+    ESPConfigCard.Size = UDim2.new(1, 0, 0, 180)
     ESPConfigCard.Position = UDim2.new(0, 0, 0, 0)
     ESPConfigCard.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
     ESPConfigCard.BackgroundTransparency = 0.1
@@ -1166,18 +1141,18 @@ local function createModernUI()
     ESPTitle.Text = "👁️ إعدادات الرؤية عبر الجدران"
     ESPTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
     ESPTitle.Font = Enum.Font.GothamBold
-    ESPTitle.TextSize = 14 -- أصغر للهواتف
+    ESPTitle.TextSize = 14
     ESPTitle.TextXAlignment = Enum.TextXAlignment.Left
     ESPTitle.Parent = ESPConfigCard
 
     local ESPMainToggle = Instance.new("TextButton")
-    ESPMainToggle.Size = UDim2.new(0.48, 0, 0, 30) -- نسب للهواتف
+    ESPMainToggle.Size = UDim2.new(0.48, 0, 0, 30)
     ESPMainToggle.Position = UDim2.new(0, 10, 0, 30)
     ESPMainToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
     ESPMainToggle.Text = "🔘 ESP الرئيسي: مفعل"
     ESPMainToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     ESPMainToggle.Font = Enum.Font.GothamBold
-    ESPMainToggle.TextSize = 12 -- أصغر للهواتف
+    ESPMainToggle.TextSize = 12
     ESPMainToggle.Parent = ESPConfigCard
 
     local toggleCorner = Instance.new("UICorner")
@@ -1262,7 +1237,6 @@ local function createModernUI()
     toggleCorner:Clone().Parent = TeamCheckToggle
 
     -- محتوى تبويب Combat
-    -- بطاقة الأيم بوت السريع
     local AimbotCard = Instance.new("Frame")
     AimbotCard.Size = UDim2.new(1, 0, 0, 140)
     AimbotCard.Position = UDim2.new(0, 0, 0, 0)
@@ -1317,7 +1291,7 @@ local function createModernUI()
     FOVColorButton.Parent = AimbotCard
     toggleCorner:Clone().Parent = FOVColorButton
 
-    -- بطاقة توسيع الهيت بوكس
+    -- بطاقة توسيع الهيت بوكس المحسن
     local HitboxCard = Instance.new("Frame")
     HitboxCard.Size = UDim2.new(1, 0, 0, 200)
     HitboxCard.Position = UDim2.new(0, 0, 0, 150)
@@ -1332,7 +1306,7 @@ local function createModernUI()
     HitboxTitle.Size = UDim2.new(1, -20, 0, 20)
     HitboxTitle.Position = UDim2.new(0, 10, 0, 5)
     HitboxTitle.BackgroundTransparency = 1
-    HitboxTitle.Text = "🎯 توسيع الهيت بوكس"
+    HitboxTitle.Text = "🎯 توسيع الهيت بوكس (محسن)"
     HitboxTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
     HitboxTitle.Font = Enum.Font.GothamBold
     HitboxTitle.TextSize = 14
@@ -1464,7 +1438,7 @@ local function createModernUI()
     sliderFillCorner.Parent = SliderFill
 
     local SliderThumb = Instance.new("TextButton")
-    SliderThumb.Size = UDim2.new(0, 15, 0, 15) -- أصغر للهواتف
+    SliderThumb.Size = UDim2.new(0, 15, 0, 15)
     SliderThumb.Position = UDim2.new((HitboxSizeMultiplier - 1) / 2, -7, 0, -5)
     SliderThumb.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     SliderThumb.Text = ""
@@ -1481,7 +1455,6 @@ local function createModernUI()
     thumbShadow.Parent = SliderThumb
 
     -- محتوى تبويب Movement
-    -- بطاقة السرعة
     local SpeedCard = Instance.new("Frame")
     SpeedCard.Size = UDim2.new(1, 0, 0, 90)
     SpeedCard.Position = UDim2.new(0, 0, 0, 0)
@@ -1620,7 +1593,6 @@ local function createModernUI()
     toggleCorner:Clone().Parent = FlyToggle
 
     -- محتوى تبويب Visual
-    -- بطاقة المعلومات
     local InfoCard = Instance.new("Frame")
     InfoCard.Size = UDim2.new(1, 0, 0, 140)
     InfoCard.Position = UDim2.new(0, 0, 0, 0)
@@ -2122,8 +2094,18 @@ local function initializeSystem()
     CreateFOVCircle()
     
     -- الحلقة الرئيسية للتحديث
+    local lastESPUpdate = 0
+    local lastAimbotCheck = 0
+    
     RunService.RenderStepped:Connect(function()
-        UpdateESP()
+        local currentTime = tick()
+        
+        -- تحديث ESP كل 0.1 ثانية فقط لتقليل الحمل
+        if currentTime - lastESPUpdate > 0.1 then
+            UpdateESP()
+            lastESPUpdate = currentTime
+        end
+        
         UpdateFOVCircle()
         
         -- نظام الأيم بوت السريع جداً
@@ -2140,21 +2122,29 @@ local function initializeSystem()
 
     -- إضافة لاعبين جدد
     Players.PlayerAdded:Connect(function(newPlayer)
-        if getgenv().HBE then
-            AssignHitboxes(newPlayer)
+        if HitboxEnabled then
+            -- تطبيق الهيت بوكس على اللاعب الجديد
+            if newPlayer.Character then
+                ModifyHitbox(newPlayer.Character, true)
+            end
+            newPlayer.CharacterAdded:Connect(function(char)
+                wait(0.5)
+                ModifyHitbox(char, true)
+            end)
         end
     end)
 
     -- التأكد من استمرار العمل بعد الموت
     player.CharacterAdded:Connect(function(character)
         print("🔄 MZ Hub: إعادة ولادة - النظام يعمل!")
-        CHAR_PARENT = GetCharParent()
+        
         -- إعادة تطبيق إعدادات الحركة
+        wait(0.5)
         UpdateMovement()
         
         -- إذا كان الطيران مفعلاً، إعادة تفعيله
         if FlyEnabled then
-            wait(0.5) -- انتظر قليلاً
+            wait(1)
             EnableFly()
         end
     end)
@@ -2187,13 +2177,12 @@ local function initializeSystem()
     end)
 
     print("🎉 MZ Hub v4.0 - تم التحميل بنجاح!")
-    print("✨ واجهة مخصصة للهواتف")
-    print("⚡ أيم بوت فوري سريع جداً - بدون أي تأخير")
-    print("🎯 التركيز على الرأس فقط بسرعة فائقة")
-    print("🗑️ تم حذف الهيكل العظمي من ESP")
+    print("✨ نظام الهيت بوكس محسن بدون تباطؤ")
+    print("⚡ أيم بوت فوري سريع جداً")
+    print("🔄 تحديثات محسنة للأداء")
     print("📢 زر Discord لنسخ رابط السيرفر")
-    print("👁️ تبويب ESP كامل (Box, Names, Distance)")
-    print("🎯 تبويب قتال - أيم بوت سريع وهيت بوكس")
+    print("👁️ تبويب ESP كامل")
+    print("🎯 تبويب قتال - أيم بوت سريع وهيت بوكس محسن")
     print("🏃 تبويب حركة - سرعة، قفز، طيران")
     print("🎨 تبويب مرئيات - معلومات وألوان")
     print("💎 جميع النصوص باللغة العربية")
