@@ -226,92 +226,6 @@ local function ShowWelcomeNotification()
 end
 
 -- =============================================
--- وظيفة نسخ رابط الديسكورد
--- =============================================
-local function CopyDiscordLink()
-    local DiscordLink = "https://discord.gg/pdk7xXem3D"
-    
-    -- إنشاء إشعار
-    local NotificationGui = Instance.new("ScreenGui")
-    NotificationGui.Name = "DiscordNotification"
-    NotificationGui.Parent = CoreGui
-    NotificationGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
-    local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 350, 0, 120)
-    MainFrame.Position = UDim2.new(0.5, -175, 0.7, -60)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
-    MainFrame.BackgroundTransparency = 0.1
-    MainFrame.BorderSizePixel = 0
-    MainFrame.Parent = NotificationGui
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 15)
-    corner.Parent = MainFrame
-
-    local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(88, 101, 242)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(71, 82, 196))
-    })
-    gradient.Parent = MainFrame
-
-    local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(1, -20, 0, 30)
-    Title.Position = UDim2.new(0, 10, 0, 10)
-    Title.BackgroundTransparency = 1
-    Title.Text = "📢 رابط سيرفر الديسكورد"
-    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 16
-    Title.TextXAlignment = Enum.TextXAlignment.Center
-    Title.Parent = MainFrame
-
-    local LinkLabel = Instance.new("TextLabel")
-    LinkLabel.Size = UDim2.new(1, -20, 0, 30)
-    LinkLabel.Position = UDim2.new(0, 10, 0, 45)
-    LinkLabel.BackgroundTransparency = 1
-    LinkLabel.Text = DiscordLink
-    LinkLabel.TextColor3 = Color3.fromRGB(200, 200, 255)
-    LinkLabel.Font = Enum.Font.Gotham
-    LinkLabel.TextSize = 14
-    LinkLabel.TextXAlignment = Enum.TextXAlignment.Center
-    LinkLabel.Parent = MainFrame
-
-    local CopyButton = Instance.new("TextButton")
-    CopyButton.Size = UDim2.new(0, 120, 0, 35)
-    CopyButton.Position = UDim2.new(0.5, -60, 1, -45)
-    CopyButton.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-    CopyButton.Text = "📋 نسخ الرابط"
-    CopyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    CopyButton.Font = Enum.Font.GothamBold
-    CopyButton.TextSize = 14
-    CopyButton.Parent = MainFrame
-
-    local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 8)
-    buttonCorner.Parent = CopyButton
-
-    CopyButton.MouseButton1Click:Connect(function()
-        pcall(function()
-            setclipboard(DiscordLink)
-            CopyButton.Text = "✅ تم النسخ!"
-            CopyButton.BackgroundColor3 = Color3.fromRGB(39, 174, 96)
-            
-            wait(2)
-            NotificationGui:Destroy()
-        end)
-    end)
-
-    -- إغلاق تلقائي بعد 10 ثواني
-    delay(10, function()
-        if NotificationGui then
-            NotificationGui:Destroy()
-        end
-    end)
-end
-
--- =============================================
 -- نظام الأيم بوت السريع جداً مع دائرة FOV في المنتصف
 -- =============================================
 local function CreateFOVCircle()
@@ -862,13 +776,13 @@ local function createModernUI()
     ControlGui.ResetOnSpawn = false
     ControlGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-    -- زر الفتح/الإغلاق الرئيسي مع الصورة الأصلية
+    -- زر الفتح/الإغلاق الرئيسي مع الصورة المطلوبة
     OpenCloseButton = Instance.new("ImageButton")
     OpenCloseButton.Name = "MainToggle"
     OpenCloseButton.Size = UDim2.new(0, 70, 0, 70)
     OpenCloseButton.Position = UDim2.new(0, 15, 0.5, -35)
     OpenCloseButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    OpenCloseButton.Image = "rbxassetid://7072716647" -- الصورة الأصلية
+    OpenCloseButton.Image = "rbxassetid://99279102821000" -- الصورة المطلوبة
     OpenCloseButton.ScaleType = Enum.ScaleType.Fit
     OpenCloseButton.Parent = ControlGui
 
@@ -953,29 +867,20 @@ local function createModernUI()
     Subtitle.TextXAlignment = Enum.TextXAlignment.Left
     Subtitle.Parent = Header
 
-    -- زر الإغلاق
-    local CloseButton = Instance.new("ImageButton")
-    CloseButton.Size = UDim2.new(0, 25, 0, 25)
-    CloseButton.Position = UDim2.new(0.9, 0, 0.5, -12)
+    -- زر الإغلاق الجديد (X)
+    local CloseButton = Instance.new("TextButton")
+    CloseButton.Size = UDim2.new(0, 30, 0, 30)
+    CloseButton.Position = UDim2.new(0.95, -30, 0.5, -15)
     CloseButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-    CloseButton.Image = "http://www.roblox.com/asset/?id=118614421027521"
+    CloseButton.Text = "X"
+    CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CloseButton.Font = Enum.Font.GothamBold
+    CloseButton.TextSize = 18
     CloseButton.Parent = Header
 
     local closeCorner = Instance.new("UICorner")
     closeCorner.CornerRadius = UDim.new(1, 0)
     closeCorner.Parent = CloseButton
-
-    -- زر Discord
-    local DiscordButton = Instance.new("ImageButton")
-    DiscordButton.Size = UDim2.new(0, 25, 0, 25)
-    DiscordButton.Position = UDim2.new(0.8, 0, 0.5, -12)
-    DiscordButton.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-    DiscordButton.Image = "http://www.roblox.com/asset/?id=118614421027521"
-    DiscordButton.Parent = Header
-
-    local discordCorner = Instance.new("UICorner")
-    discordCorner.CornerRadius = UDim.new(1, 0)
-    discordCorner.Parent = DiscordButton
 
     -- تبويبات
     local TabsContainer = Instance.new("Frame")
@@ -1441,39 +1346,6 @@ local function createModernUI()
     FlyToggle.Parent = JumpCard
     toggleCorner:Clone().Parent = FlyToggle
 
-    -- بطاقة Discord
-    local DiscordCard = Instance.new("Frame")
-    DiscordCard.Size = UDim2.new(1, 0, 0, 100)
-    DiscordCard.Position = UDim2.new(0, 0, 0, 250)
-    DiscordCard.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
-    DiscordCard.BackgroundTransparency = 0.1
-    DiscordCard.BorderSizePixel = 0
-    DiscordCard.Parent = ContentContainer
-    cardCorner:Clone().Parent = DiscordCard
-    cardShadow:Clone().Parent = DiscordCard
-
-    local DiscordTitle = Instance.new("TextLabel")
-    DiscordTitle.Size = UDim2.new(1, -20, 0, 20)
-    DiscordTitle.Position = UDim2.new(0, 10, 0, 5)
-    DiscordTitle.BackgroundTransparency = 1
-    DiscordTitle.Text = "📢 سيرفر الديسكورد"
-    DiscordTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    DiscordTitle.Font = Enum.Font.GothamBold
-    DiscordTitle.TextSize = 14
-    DiscordTitle.TextXAlignment = Enum.TextXAlignment.Left
-    DiscordTitle.Parent = DiscordCard
-
-    local DiscordButton = Instance.new("TextButton")
-    DiscordButton.Size = UDim2.new(1, -20, 0, 50)
-    DiscordButton.Position = UDim2.new(0, 10, 0, 30)
-    DiscordButton.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-    DiscordButton.Text = "انقر لنسخ رابط الديسكورد"
-    DiscordButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    DiscordButton.Font = Enum.Font.GothamBold
-    DiscordButton.TextSize = 12
-    DiscordButton.Parent = DiscordCard
-    toggleCorner:Clone().Parent = DiscordButton
-
     -- حقوق النشر
     local CopyrightLabel = Instance.new("TextLabel")
     CopyrightLabel.Size = UDim2.new(1, -20, 0, 20)
@@ -1537,17 +1409,6 @@ local function createModernUI()
     MovementTab.MouseButton1Click:Connect(function()
         ShowTab("Movement")
         createRippleEffect(MovementTab)
-    end)
-
-    DiscordButton.MouseButton1Click:Connect(function()
-        CopyDiscordLink()
-        createRippleEffect(DiscordButton)
-    end)
-
-    -- زر Discord في الهيدر
-    DiscordButton.MouseButton1Click:Connect(function()
-        CopyDiscordLink()
-        createRippleEffect(DiscordButton)
     end)
 
     -- وظيفة تحديث شريط الهيت بوكس
@@ -1655,6 +1516,8 @@ local function createModernUI()
     CloseButton.MouseButton1Click:Connect(function()
         MainFrame.Visible = false
         UIVisible = false
+        
+        createRippleEffect(CloseButton)
         
         local tween = TweenService:Create(OpenCloseButton, TweenInfo.new(0.3), {
             BackgroundColor3 = Color3.fromRGB(25, 25, 25),
@@ -1917,14 +1780,14 @@ local function initializeSystem()
     end)
 
     print("🎉 MZ Hub v4.0 - تم التحميل بنجاح!")
-    print("✨ زر مع الصورة الأصلية")
+    print("✨ زر مع الصورة الجديدة (ID: 99279102821000)")
+    print("❌ زر الإغلاق الجديد (X)")
     print("👁️ نظام ESP بسيط وسريع بدون أي تأخير:")
     print("   📦 Box ESP فقط")
     print("   🏷️ أسماء اللاعبين")
     print("🎯 نظام الهيت بوكس (الجذع فقط)")
     print("⚡ أيم بوت فوري سريع")
     print("🏃 نظام الحركة")
-    print("📢 زر Discord لنسخ رابط السيرفر")
     print("💎 جميع النصوص باللغة العربية")
     print("💎 MZ Hub ©️ | صنع بواسطة Unknow Boi")
 end
