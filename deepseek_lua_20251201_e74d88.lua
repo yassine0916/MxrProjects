@@ -303,7 +303,7 @@ local function FindBestTarget()
     for _, otherPlayer in pairs(Players:GetPlayers()) do
         if otherPlayer ~= player and otherPlayer.Character then
             local humanoid = otherPlayer.Character:FindFirstChild("Humanoid")
-            local targetPart = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local targetPart = otherPlayer.Character:FindFirstChild("Head") or otherPlayer.Character:FindFirstChild("HumanoidRootPart")
             
             if humanoid and humanoid.Health > 0 and targetPart then
                 local screenPoint, visible = Camera:WorldToScreenPoint(targetPart.Position)
@@ -326,7 +326,7 @@ local function FindBestTarget()
     return bestTarget
 end
 
--- أيم بوت سريع جداً بدون أي تأخير
+-- أيم بوت سريع جداً بدون أي تأخير - يتابع الرأس مباشرة
 local function InstantHeadLock(targetPart)
     if not targetPart or not Camera then return end
     
@@ -335,6 +335,23 @@ local function InstantHeadLock(targetPart)
     
     local lookDirection = (targetPosition - cameraPosition).Unit
     Camera.CFrame = CFrame.new(cameraPosition, cameraPosition + lookDirection)
+end
+
+-- أيم بوت أقوى مع تتبع الرأس بشكل فوري
+local function AdvancedHeadFollow()
+    local target = FindBestTarget()
+    if target then
+        -- تحديد الجزء الهدف (نفضل الرأس)
+        local head = target.Parent:FindFirstChild("Head")
+        local targetPosition = head and head.Position or target.Position
+        
+        -- تحريك الكاميرا نحو الهدف مباشرة
+        local cameraCFrame = Camera.CFrame
+        local targetCFrame = CFrame.new(cameraCFrame.Position, targetPosition)
+        
+        -- تداخل فوري بدون أي تأخير
+        Camera.CFrame = targetCFrame
+    end
 end
 
 -- =============================================
@@ -610,6 +627,15 @@ local function CreateESP(player)
     
     ESPObjects[player] = esp
     return esp
+end
+
+local function RemoveESP(player)
+    local esp = ESPObjects[player]
+    if esp then
+        esp.Box:Remove()
+        esp.Name:Remove()
+        ESPObjects[player] = nil
+    end
 end
 
 local function GetTeamColor(targetPlayer)
@@ -1706,24 +1732,7 @@ local function initializeSystem()
     -- إنشاء دائرة FOV في المنتصف
     CreateFOVCircle()
     
-    -- تحديث ESP بدون أي تأخير
-    RunService.RenderStepped:Connect(function()
-        UpdateESP()
-        UpdateFOVCircle()
-        
-        -- نظام الأيم بوت السريع جداً
-        if AimbotEnabled and UserInputService:IsMouseButtonPressed(AimKey) then
-            local target = FindBestTarget()
-            if target then
-                InstantHeadLock(target)
-            end
-        end
-        
-        -- تحديث الحركة
-        UpdateMovement()
-    end)
-
-    -- إضافة لاعبين جدد
+    -- إدارة اللاعبين عند الانضمام والمغادرة
     Players.PlayerAdded:Connect(function(newPlayer)
         if HitboxEnabled then
             -- تطبيق الهيت بوكس على اللاعب الجديد
@@ -1735,6 +1744,30 @@ local function initializeSystem()
                 ModifyHitbox(char, true)
             end)
         end
+    end)
+    
+    Players.PlayerRemoving:Connect(function(leavingPlayer)
+        -- إزالة ESP عند مغادرة اللاعب
+        RemoveESP(leavingPlayer)
+        
+        -- استعادة الهيت بوكس عند المغادرة
+        if leavingPlayer.Character then
+            ModifyHitbox(leavingPlayer.Character, false)
+        end
+    end)
+    
+    -- تحديث ESP والأيم بوت بدون أي تأخير
+    RunService.RenderStepped:Connect(function()
+        UpdateESP()
+        UpdateFOVCircle()
+        
+        -- نظام الأيم بوت السريع جداً - أقوى مع تتبع الرأس
+        if AimbotEnabled and UserInputService:IsMouseButtonPressed(AimKey) then
+            AdvancedHeadFollow()
+        end
+        
+        -- تحديث الحركة
+        UpdateMovement()
     end)
 
     -- التأكد من استمرار العمل بعد الموت
@@ -1766,9 +1799,8 @@ local function initializeSystem()
             -- تنظيف الـ ESP
             for _, esp in pairs(ESPObjects) do
                 if esp then
-                    for _, drawing in pairs(esp) do
-                        drawing:Remove()
-                    end
+                    esp.Box:Remove()
+                    esp.Name:Remove()
                 end
             end
             
@@ -1786,7 +1818,7 @@ local function initializeSystem()
     print("   📦 Box ESP فقط")
     print("   🏷️ أسماء اللاعبين")
     print("🎯 نظام الهيت بوكس (الجذع فقط)")
-    print("⚡ أيم بوت فوري سريع")
+    print("⚡⚡ أيم بوت فوري أقوى مع تتبع الرأس مباشرة")
     print("🏃 نظام الحركة")
     print("💎 جميع النصوص باللغة العربية")
     print("💎 MZ Hub ©️ | صنع بواسطة Unknow Boi")
