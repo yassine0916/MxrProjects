@@ -29,7 +29,7 @@ local AimbotEnabled = false
 local InfiniteJumpEnabled = false
 local FlyEnabled = false
 
--- إعدادات الأيم بوت السريع جداً
+-- إعدادات الأيم بوت الفوري
 local FOVRadius = 100
 local FOVCircleVisible = true
 local FOVColor = Color3.fromRGB(255, 0, 0)
@@ -60,7 +60,7 @@ local ColorOptions = {
 }
 
 -- =============================================
--- نظام الأيم بوت السريع جداً مع دائرة FOV في المنتصف
+-- نظام الأيم بوت الفوري القوي مع تتبع الرأس
 -- =============================================
 local function CreateFOVCircle()
     local FOVGui = Instance.new("ScreenGui")
@@ -137,7 +137,7 @@ local function FindBestTarget()
     for _, otherPlayer in pairs(Players:GetPlayers()) do
         if otherPlayer ~= player and otherPlayer.Character then
             local humanoid = otherPlayer.Character:FindFirstChild("Humanoid")
-            local targetPart = otherPlayer.Character:FindFirstChild("Head") or otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local targetPart = otherPlayer.Character:FindFirstChild("Head")
             
             if humanoid and humanoid.Health > 0 and targetPart then
                 local screenPoint, visible = Camera:WorldToScreenPoint(targetPart.Position)
@@ -160,32 +160,150 @@ local function FindBestTarget()
     return bestTarget
 end
 
--- أيم بوت سريع جداً بدون أي تأخير
-local function InstantHeadLock(targetPart)
-    if not targetPart or not Camera then return end
+-- نظام Snap Aimbot الفوري (يشبه الـ Aim Assist في الألعاب الحديثة)
+local function InstantSnapAimbot()
+    if not AimbotEnabled then return end
     
-    local targetPosition = targetPart.Position
-    local cameraPosition = Camera.CFrame.Position
-    
-    local lookDirection = (targetPosition - cameraPosition).Unit
-    Camera.CFrame = CFrame.new(cameraPosition, cameraPosition + lookDirection)
+    if UserInputService:IsMouseButtonPressed(AimKey) then
+        local bestTarget = nil
+        local closestDistance = FOVRadius
+        
+        local camera = workspace.CurrentCamera
+        local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+        
+        -- البحث عن أفضل هدف
+        for _, otherPlayer in pairs(Players:GetPlayers()) do
+            if otherPlayer ~= player and otherPlayer.Character then
+                local humanoid = otherPlayer.Character:FindFirstChild("Humanoid")
+                local head = otherPlayer.Character:FindFirstChild("Head")
+                
+                if humanoid and humanoid.Health > 0 and head then
+                    local screenPoint, visible = camera:WorldToScreenPoint(head.Position)
+                    
+                    if visible then
+                        local screenPos = Vector2.new(screenPoint.X, screenPoint.Y)
+                        local distance = (screenPos - screenCenter).Magnitude
+                        
+                        if distance <= FOVRadius and distance < closestDistance then
+                            if IsTargetVisible(head) then
+                                bestTarget = head
+                                closestDistance = distance
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+        -- إذا وجدنا هدفاً، نطبق Snap فوري
+        if bestTarget then
+            local cameraPos = camera.CFrame.Position
+            local headPos = bestTarget.Position
+            
+            -- Snap فوري نحو الرأس
+            camera.CFrame = CFrame.new(cameraPos, headPos)
+            return bestTarget
+        end
+    end
+    return nil
 end
 
--- أيم بوت أقوى مع تتبع الرأس بشكل فوري
-local function AdvancedHeadFollow()
-    local target = FindBestTarget()
-    if target then
-        -- تحديد الجزء الهدف (نفضل الرأس)
-        local head = target.Parent:FindFirstChild("Head")
-        local targetPosition = head and head.Position or target.Position
-        
-        -- تحريك الكاميرا نحو الهدف مباشرة
-        local cameraCFrame = Camera.CFrame
-        local targetCFrame = CFrame.new(cameraCFrame.Position, targetPosition)
-        
-        -- تداخل فوري بدون أي تأخير
-        Camera.CFrame = targetCFrame
+-- نظام أقوى مع تتبع مستمر أثناء الضغط
+local function ContinuousHeadTracking()
+    if not AimbotEnabled then return end
+    
+    if UserInputService:IsMouseButtonPressed(AimKey) then
+        local target = FindBestTarget()
+        if target then
+            local camera = workspace.CurrentCamera
+            local cameraPos = camera.CFrame.Position
+            local headPos = target.Position
+            
+            -- تتبع مستمر للرأس مع تحديث فوري
+            camera.CFrame = CFrame.new(cameraPos, headPos)
+            return target
+        end
     end
+    return nil
+end
+
+-- نظام Hybrid: يجمع بين Snap والتتبع المستمر
+local function HybridAimbotSystem()
+    if not AimbotEnabled then return end
+    
+    if UserInputService:IsMouseButtonPressed(AimKey) then
+        local bestTarget = nil
+        local closestDistance = FOVRadius
+        
+        local camera = workspace.CurrentCamera
+        local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+        
+        -- Phase 1: البحث عن أقرب هدف
+        for _, otherPlayer in pairs(Players:GetPlayers()) do
+            if otherPlayer ~= player and otherPlayer.Character then
+                local humanoid = otherPlayer.Character:FindFirstChild("Humanoid")
+                local head = otherPlayer.Character:FindFirstChild("Head")
+                
+                if humanoid and humanoid.Health > 0 and head then
+                    local screenPoint, visible = camera:WorldToScreenPoint(head.Position)
+                    
+                    if visible then
+                        local screenPos = Vector2.new(screenPoint.X, screenPoint.Y)
+                        local distance = (screenPos - screenCenter).Magnitude
+                        
+                        if distance <= FOVRadius * 0.8 then -- 80% من FOV للأفضلية
+                            if IsTargetVisible(head) then
+                                bestTarget = head
+                                closestDistance = distance
+                                break -- أول هدف مناسب نوقف البحث
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+        -- Phase 2: تطبيق الأيم بوت
+        if bestTarget then
+            local cameraPos = camera.CFrame.Position
+            local headPos = bestTarget.Position
+            
+            -- Snap فوري نحو الرأس مع دقة عالية
+            camera.CFrame = CFrame.new(cameraPos, headPos + Vector3.new(0, 0.1, 0)) -- إزاحة بسيطة لأعلى للرأس
+            
+            return bestTarget
+        end
+    end
+    return nil
+end
+
+-- نظام الأيم بوت الفوري القوي مع تتبع الرأس بدون أي تأخير
+local function InstantHeadLock()
+    if not AimbotEnabled then return end
+    
+    local target = FindBestTarget()
+    if target and UserInputService:IsMouseButtonPressed(AimKey) then
+        -- تخزين البيانات الحالية
+        local camera = workspace.CurrentCamera
+        local cameraCFrame = camera.CFrame
+        local cameraPosition = cameraCFrame.Position
+        
+        -- الحصول على موضع الرأس الهدف
+        local headPosition = target.Position
+        
+        -- حساب اتجاه النظر نحو الرأس مباشرة
+        local lookVector = (headPosition - cameraPosition).Unit
+        
+        -- إنشاء CFrame جديد للكاميرا
+        local newCFrame = CFrame.new(cameraPosition, cameraPosition + lookVector)
+        
+        -- تطبيق مباشر بدون أي تأخير
+        camera.CFrame = newCFrame
+        
+        -- إرجاع الهدف للاستخدام في ميزات إضافية
+        return target
+    end
+    return nil
 end
 
 -- =============================================
@@ -629,6 +747,14 @@ end
 local ControlGui, MainFrame, OpenCloseButton
 local InfiniteJumpConnection
 
+-- متغيرات لأنماط الأيم بوت
+local AimbotModes = {
+    "Snap",      -- 1: Snap فوري
+    "Tracking",  -- 2: تتبع مستمر
+    "Hybrid"     -- 3: نظام هجين
+}
+local CurrentAimbotMode = 1
+
 local function createModernUI()
     ControlGui = Instance.new("ScreenGui")
     ControlGui.Name = "MZHub_Premium"
@@ -914,7 +1040,7 @@ local function createModernUI()
 
     -- محتوى تبويب Combat
     local AimbotCard = Instance.new("Frame")
-    AimbotCard.Size = UDim2.new(1, 0, 0, 140)
+    AimbotCard.Size = UDim2.new(1, 0, 0, 175)
     AimbotCard.Position = UDim2.new(0, 0, 0, 0)
     AimbotCard.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
     AimbotCard.BackgroundTransparency = 0.1
@@ -967,10 +1093,78 @@ local function createModernUI()
     FOVColorButton.Parent = AimbotCard
     toggleCorner:Clone().Parent = FOVColorButton
 
+    -- زر لتغيير نمط الأيم بوت
+    local AimbotModeButton = Instance.new("TextButton")
+    AimbotModeButton.Size = UDim2.new(0.48, 0, 0, 30)
+    AimbotModeButton.Position = UDim2.new(0.52, 0, 0, 65)
+    AimbotModeButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    AimbotModeButton.Text = "نمط: Snap"
+    AimbotModeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    AimbotModeButton.Font = Enum.Font.GothamBold
+    AimbotModeButton.TextSize = 10
+    AimbotModeButton.Parent = AimbotCard
+    toggleCorner:Clone().Parent = AimbotModeButton
+
+    local FOVSliderContainer = Instance.new("Frame")
+    FOVSliderContainer.Size = UDim2.new(1, -20, 0, 50)
+    FOVSliderContainer.Position = UDim2.new(0, 10, 0, 105)
+    FOVSliderContainer.BackgroundTransparency = 1
+    FOVSliderContainer.Parent = AimbotCard
+
+    local FOVSizeLabel = Instance.new("TextLabel")
+    FOVSizeLabel.Size = UDim2.new(1, 0, 0, 15)
+    FOVSizeLabel.Position = UDim2.new(0, 0, 0, 0)
+    FOVSizeLabel.BackgroundTransparency = 1
+    FOVSizeLabel.Text = "حجم دائرة FOV: 100"
+    FOVSizeLabel.TextColor3 = Color3.fromRGB(200, 200, 255)
+    FOVSizeLabel.Font = Enum.Font.Gotham
+    FOVSizeLabel.TextSize = 10
+    FOVSizeLabel.TextXAlignment = Enum.TextXAlignment.Left
+    FOVSizeLabel.Parent = FOVSliderContainer
+
+    local FOVSliderBackground = Instance.new("Frame")
+    FOVSliderBackground.Size = UDim2.new(1, 0, 0, 5)
+    FOVSliderBackground.Position = UDim2.new(0, 0, 0, 20)
+    FOVSliderBackground.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    FOVSliderBackground.BorderSizePixel = 0
+    FOVSliderBackground.Parent = FOVSliderContainer
+
+    local sliderBgCorner = Instance.new("UICorner")
+    sliderBgCorner.CornerRadius = UDim.new(1, 0)
+    sliderBgCorner.Parent = FOVSliderBackground
+
+    local FOVSliderFill = Instance.new("Frame")
+    FOVSliderFill.Size = UDim2.new((FOVRadius - 50) / 200, 0, 1, 0)
+    FOVSliderFill.Position = UDim2.new(0, 0, 0, 0)
+    FOVSliderFill.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+    FOVSliderFill.BorderSizePixel = 0
+    FOVSliderFill.Parent = FOVSliderBackground
+
+    local sliderFillCorner = Instance.new("UICorner")
+    sliderFillCorner.CornerRadius = UDim.new(1, 0)
+    sliderFillCorner.Parent = FOVSliderFill
+
+    local FOVSliderThumb = Instance.new("TextButton")
+    FOVSliderThumb.Size = UDim2.new(0, 15, 0, 15)
+    FOVSliderThumb.Position = UDim2.new((FOVRadius - 50) / 200, -7, 0, -5)
+    FOVSliderThumb.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    FOVSliderThumb.Text = ""
+    FOVSliderThumb.Parent = FOVSliderBackground
+
+    local thumbCorner = Instance.new("UICorner")
+    thumbCorner.CornerRadius = UDim.new(1, 0)
+    thumbCorner.Parent = FOVSliderThumb
+
+    local thumbShadow = Instance.new("UIStroke")
+    thumbShadow.Color = Color3.fromRGB(0, 0, 0)
+    thumbShadow.Thickness = 1
+    thumbShadow.Transparency = 0.5
+    thumbShadow.Parent = FOVSliderThumb
+
     -- بطاقة توسيع الهيت بوكس (الجذع فقط)
     local HitboxCard = Instance.new("Frame")
     HitboxCard.Size = UDim2.new(1, 0, 0, 150)
-    HitboxCard.Position = UDim2.new(0, 0, 0, 150)
+    HitboxCard.Position = UDim2.new(0, 0, 0, 185)
     HitboxCard.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
     HitboxCard.BackgroundTransparency = 0.1
     HitboxCard.BorderSizePixel = 0
@@ -1036,10 +1230,6 @@ local function createModernUI()
     SliderBackground.BorderSizePixel = 0
     SliderBackground.Parent = SizeSliderContainer
 
-    local sliderBgCorner = Instance.new("UICorner")
-    sliderBgCorner.CornerRadius = UDim.new(1, 0)
-    sliderBgCorner.Parent = SliderBackground
-
     local SliderFill = Instance.new("Frame")
     SliderFill.Size = UDim2.new((HitboxSizeMultiplier - 1) / 2, 0, 1, 0)
     SliderFill.Position = UDim2.new(0, 0, 0, 0)
@@ -1047,26 +1237,14 @@ local function createModernUI()
     SliderFill.BorderSizePixel = 0
     SliderFill.Parent = SliderBackground
 
-    local sliderFillCorner = Instance.new("UICorner")
-    sliderFillCorner.CornerRadius = UDim.new(1, 0)
-    sliderFillCorner.Parent = SliderFill
-
     local SliderThumb = Instance.new("TextButton")
     SliderThumb.Size = UDim2.new(0, 15, 0, 15)
     SliderThumb.Position = UDim2.new((HitboxSizeMultiplier - 1) / 2, -7, 0, -5)
     SliderThumb.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     SliderThumb.Text = ""
     SliderThumb.Parent = SliderBackground
-
-    local thumbCorner = Instance.new("UICorner")
-    thumbCorner.CornerRadius = UDim.new(1, 0)
-    thumbCorner.Parent = SliderThumb
-
-    local thumbShadow = Instance.new("UIStroke")
-    thumbShadow.Color = Color3.fromRGB(0, 0, 0)
-    thumbShadow.Thickness = 1
-    thumbShadow.Transparency = 0.5
-    thumbShadow.Parent = SliderThumb
+    thumbCorner:Clone().Parent = SliderThumb
+    thumbShadow:Clone().Parent = SliderThumb
 
     -- محتوى تبويب Movement
     local SpeedCard = Instance.new("Frame")
@@ -1107,7 +1285,6 @@ local function createModernUI()
     SpeedSlider.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
     SpeedSlider.BorderSizePixel = 0
     SpeedSlider.Parent = SpeedCard
-    sliderBgCorner:Clone().Parent = SpeedSlider
 
     local SpeedFill = Instance.new("Frame")
     SpeedFill.Size = UDim2.new((PlayerSpeed - 16) / 84, 0, 1, 0)
@@ -1115,7 +1292,6 @@ local function createModernUI()
     SpeedFill.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
     SpeedFill.BorderSizePixel = 0
     SpeedFill.Parent = SpeedSlider
-    sliderFillCorner:Clone().Parent = SpeedFill
 
     local SpeedThumb = Instance.new("TextButton")
     SpeedThumb.Size = UDim2.new(0, 15, 0, 15)
@@ -1165,7 +1341,6 @@ local function createModernUI()
     JumpSlider.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
     JumpSlider.BorderSizePixel = 0
     JumpSlider.Parent = JumpCard
-    sliderBgCorner:Clone().Parent = JumpSlider
 
     local JumpFill = Instance.new("Frame")
     JumpFill.Size = UDim2.new((JumpPower - 50) / 150, 0, 1, 0)
@@ -1173,7 +1348,6 @@ local function createModernUI()
     JumpFill.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
     JumpFill.BorderSizePixel = 0
     JumpFill.Parent = JumpSlider
-    sliderFillCorner:Clone().Parent = JumpFill
 
     local JumpThumb = Instance.new("TextButton")
     JumpThumb.Size = UDim2.new(0, 15, 0, 15)
@@ -1283,6 +1457,19 @@ local function createModernUI()
         end
     end
 
+    -- وظيفة تحديث شريط FOV
+    local function updateFOVSlider(value)
+        FOVRadius = math.clamp(value, 50, 250)
+        FOVSizeLabel.Text = string.format("حجم دائرة FOV: %d", FOVRadius)
+        FOVSliderFill.Size = UDim2.new((FOVRadius - 50) / 200, 0, 1, 0)
+        FOVSliderThumb.Position = UDim2.new((FOVRadius - 50) / 200, -7, 0, -5)
+        
+        if FOVCircle then
+            FOVCircle.Frame.Size = UDim2.new(0, FOVRadius * 2, 0, FOVRadius * 2)
+            FOVCircle.Frame.Position = UDim2.new(0.5, -FOVRadius, 0.5, -FOVRadius)
+        end
+    end
+
     -- وظيفة تحديث شريط السرعة
     local function updateSpeedSlider(value)
         PlayerSpeed = math.clamp(value, 16, 100)
@@ -1348,6 +1535,7 @@ local function createModernUI()
 
     -- إعداد الشرائط
     setupSlider(SliderBackground, SliderThumb, updateHitboxSlider, 1, 3)
+    setupSlider(FOVSliderBackground, FOVSliderThumb, updateFOVSlider, 50, 250)
     setupSlider(SpeedSlider, SpeedThumb, updateSpeedSlider, 16, 100)
     setupSlider(JumpSlider, JumpThumb, updateJumpSlider, 50, 200)
 
@@ -1447,6 +1635,12 @@ local function createModernUI()
         FOVColorButton.BackgroundColor3 = FOVColor
         createRippleEffect(FOVColorButton)
         UpdateFOVCircle()
+    end)
+
+    AimbotModeButton.MouseButton1Click:Connect(function()
+        CurrentAimbotMode = (CurrentAimbotMode % #AimbotModes) + 1
+        AimbotModeButton.Text = "نمط: " .. AimbotModes[CurrentAimbotMode]
+        createRippleEffect(AimbotModeButton)
     end)
 
     HitboxToggle.MouseButton1Click:Connect(function()
@@ -1592,9 +1786,15 @@ local function initializeSystem()
         UpdateESP()
         UpdateFOVCircle()
         
-        -- نظام الأيم بوت السريع جداً - أقوى مع تتبع الرأس
+        -- نظام الأيم بوت حسب النمط المحدد
         if AimbotEnabled and UserInputService:IsMouseButtonPressed(AimKey) then
-            AdvancedHeadFollow()
+            if CurrentAimbotMode == 1 then
+                InstantSnapAimbot()      -- Snap فوري
+            elseif CurrentAimbotMode == 2 then
+                ContinuousHeadTracking()  -- تتبع مستمر
+            elseif CurrentAimbotMode == 3 then
+                HybridAimbotSystem()     -- نظام هجين
+            end
         end
         
         -- تحديث الحركة
