@@ -28,7 +28,7 @@ local AimbotEnabled = false
 local InfiniteJumpEnabled = false
 local FlyEnabled = false
 
--- إعدادات الأيم بوت الفوري الفائق السرعة
+-- إعدادات الأيم بوت الفائق السرعة
 local FOVRadius = 100
 local FOVCircleVisible = true
 local FOVColor = Color3.fromRGB(255, 0, 0)
@@ -59,7 +59,7 @@ local ColorOptions = {
 }
 
 -- =============================================
--- نظام الأيم بوت الفوري الفائق السرعة
+-- نظام الأيم بوت الفائق السرعة (فوري تماماً)
 -- =============================================
 local function CreateFOVCircle()
     local FOVGui = Instance.new("ScreenGui")
@@ -79,16 +79,27 @@ local function CreateFOVCircle()
     UICircle.CornerRadius = UDim.new(0.5, 0)
     UICircle.Parent = Frame
 
+    -- خط سميك وعريض
     local Outline = Instance.new("UIStroke")
     Outline.Color = FOVColor
-    Outline.Thickness = 2
-    Outline.Transparency = 0.7
+    Outline.Thickness = 5  -- زيادة السمك
+    Outline.Transparency = 0.3  -- تقليل الشفافية
+    Outline.LineJoinMode = Enum.LineJoinMode.Miter  -- حواف حادة
     Outline.Parent = Frame
+
+    -- خط إضافي لجعل الدائرة أكثر سماكة
+    local Outline2 = Instance.new("UIStroke")
+    Outline2.Color = Color3.new(1, 1, 1)  -- أبيض
+    Outline2.Thickness = 1
+    Outline2.Transparency = 0.5
+    Outline2.LineJoinMode = Enum.LineJoinMode.Miter
+    Outline2.Parent = Frame
 
     FOVCircle = {
         Gui = FOVGui,
         Frame = Frame,
-        Outline = Outline
+        Outline = Outline,
+        Outline2 = Outline2
     }
 end
 
@@ -96,6 +107,7 @@ local function UpdateFOVCircle()
     if not FOVCircle then return end
     
     FOVCircle.Outline.Color = FOVColor
+    FOVCircle.Outline2.Color = Color3.new(1, 1, 1) -- تأكد أن الخط الثاني أبيض
     
     if FOVCircleVisible and AimbotEnabled then
         FOVCircle.Gui.Enabled = true
@@ -104,119 +116,84 @@ local function UpdateFOVCircle()
     end
 end
 
--- نظام فائق السرعة لتحديد ما إذا كان الهدف مرئياً
-local function IsTargetVisible(targetPart)
-    if not targetPart or not Camera then return true end -- نرجع true لنسرع العملية
-    
-    -- نكتفي بفحص بسيط وسريع
-    local origin = Camera.CFrame.Position
-    local targetPos = targetPart.Position
-    
-    -- فحص سريع بدون Raycast لنسرع العملية
-    local direction = (targetPos - origin).Unit
-    local distance = (targetPos - origin).Magnitude
-    
-    -- نرجع true دائماً تقريباً لضمان السرعة
-    return true
-end
+-- =============================================
+-- نظام الأيم بوت الفوري الأقوى (بدون أي تأخير)
+-- =============================================
 
--- نظام فائق السرعة لإيجاد أفضل هدف
-local function FindBestTarget()
-    local bestTarget = nil
-    local closestDistance = FOVRadius
-    
-    -- نحتاج فقط للكاميرا
+-- نظام البحث الفوري عن الأهداف (الأسرع على الإطلاق)
+local function InstantFindTarget()
     if not Camera then return nil end
     
-    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local camera = Camera
+    local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+    local closestTarget = nil
+    local closestDistance = FOVRadius
     
-    -- بحث سريع جداً
+    -- حلقة سريعة جداً
     for _, otherPlayer in pairs(Players:GetPlayers()) do
-        if otherPlayer ~= player and otherPlayer.Character then
-            local humanoid = otherPlayer.Character:FindFirstChild("Humanoid")
-            local head = otherPlayer.Character:FindFirstChild("Head")
-            
-            if humanoid and humanoid.Health > 0 and head then
-                local screenPoint, visible = Camera:WorldToScreenPoint(head.Position)
-                
-                if visible then
-                    local screenPos = Vector2.new(screenPoint.X, screenPoint.Y)
-                    local distance = (screenPos - screenCenter).Magnitude
-                    
-                    -- نتحقق من المسافة فقط للسرعة
-                    if distance <= FOVRadius and distance < closestDistance then
-                        bestTarget = head
-                        closestDistance = distance
-                    end
-                end
-            end
+        if otherPlayer == player then continue end
+        
+        local character = otherPlayer.Character
+        if not character then continue end
+        
+        local head = character:FindFirstChild("Head")
+        if not head then continue end
+        
+        -- تحقق سريع جداً من الصحة
+        local humanoid = character:FindFirstChild("Humanoid")
+        if not humanoid or humanoid.Health <= 0 then continue end
+        
+        -- تحويل مباشر للشاشة
+        local screenPoint, onScreen = camera:WorldToScreenPoint(head.Position)
+        if not onScreen then continue end
+        
+        -- حساب المسافة من المركز
+        local screenPos = Vector2.new(screenPoint.X, screenPoint.Y)
+        local distance = (screenPos - screenCenter).Magnitude
+        
+        -- إذا كان داخل دائرة FOV وأقرب
+        if distance <= FOVRadius and distance < closestDistance then
+            closestTarget = head
+            closestDistance = distance
+            -- نكسر الحلقة فوراً عند أول هدف جيد للسرعة القصوى
+            break
         end
     end
     
-    return bestTarget
+    return closestTarget
 end
 
--- نظام الأيم بوت الفوري الفائق السرعة - يجمع بين الاثنين
-local function UltraFastInstantAimbot()
-    if not AimbotEnabled then return end
-    
-    if UserInputService:IsMouseButtonPressed(AimKey) then
-        local bestTarget = nil
-        local closestDistance = FOVRadius
-        
-        local camera = workspace.CurrentCamera
-        local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-        
-        -- البحث فائق السرعة عن أفضل هدف
-        for _, otherPlayer in pairs(Players:GetPlayers()) do
-            if otherPlayer ~= player and otherPlayer.Character then
-                local humanoid = otherPlayer.Character:FindFirstChild("Humanoid")
-                local head = otherPlayer.Character:FindFirstChild("Head")
-                
-                -- تحقق سريع جداً
-                if humanoid and humanoid.Health > 0 and head then
-                    local screenPoint, visible = camera:WorldToScreenPoint(head.Position)
-                    
-                    if visible then
-                        local screenPos = Vector2.new(screenPoint.X, screenPoint.Y)
-                        local distance = (screenPos - screenCenter).Magnitude
-                        
-                        if distance <= FOVRadius and distance < closestDistance then
-                            bestTarget = head
-                            closestDistance = distance
-                            -- نكسر الحلقة عند أول هدف جيد للسرعة
-                            break
-                        end
-                    end
-                end
-            end
-        end
-        
-        -- إذا وجدنا هدفاً، نطبق الأيم بوت الفوري
-        if bestTarget then
-            local cameraPos = camera.CFrame.Position
-            local headPos = bestTarget.Position
-            
-            -- Snap فوري وتتبع فوري في نفس الوقت
-            camera.CFrame = CFrame.new(cameraPos, headPos)
-            return bestTarget
-        end
+-- نظام الأيم بوت الفوري الأقوى (فوري بدون أي تأخير)
+local function UltraInstantAimbot()
+    if not AimbotEnabled or not UserInputService:IsMouseButtonPressed(AimKey) then 
+        return 
     end
-    return nil
+    
+    local target = InstantFindTarget()
+    if target then
+        local camera = workspace.CurrentCamera
+        local cameraPos = camera.CFrame.Position
+        local headPos = target.Position
+        
+        -- Snap فوري وتتبع لحظي - بدون أي تأخير
+        camera.CFrame = CFrame.new(cameraPos, headPos + Vector3.new(0, 0.05, 0))
+    end
 end
 
--- نظام أقوى وأسرع مع تتبع لحظي للرأس
-local function ExtremeInstantHeadTracker()
+-- نظام أقوى مع دقة أعلى
+local function ExtremeInstantAimbot()
     if not AimbotEnabled then return end
     
-    -- نتحقق من الضغط على الزر أولاً للسرعة
+    -- تحقق سريع من الزر المضغوط
     if UserInputService:IsMouseButtonPressed(AimKey) then
         local camera = workspace.CurrentCamera
-        local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-        local bestTarget = nil
-        local closestDistance = FOVRadius
+        if not camera then return end
         
-        -- بحث فوري
+        local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+        local bestHead = nil
+        local bestDistance = FOVRadius * 0.8 -- نبحث عن أهداف قريبة من المركز
+        
+        -- بحث فائق السرعة
         for _, otherPlayer in pairs(Players:GetPlayers()) do
             if otherPlayer == player then continue end
             
@@ -226,87 +203,126 @@ local function ExtremeInstantHeadTracker()
             local head = char:FindFirstChild("Head")
             if not head then continue end
             
-            -- نتحقق من الصحة بسرعة
+            -- تحقق فوري من الصحة
             local humanoid = char:FindFirstChild("Humanoid")
             if not humanoid or humanoid.Health <= 0 then continue end
             
-            -- تحويل سريع للشاشة
-            local screenPoint, visible = camera:WorldToScreenPoint(head.Position)
-            if not visible then continue end
+            -- تحويل فوري
+            local screenPoint, onScreen = camera:WorldToScreenPoint(head.Position)
+            if not onScreen then continue end
             
             local screenPos = Vector2.new(screenPoint.X, screenPoint.Y)
             local distance = (screenPos - screenCenter).Magnitude
             
-            -- نأخذ أول هدف داخل دائرة FOV
-            if distance <= FOVRadius then
-                bestTarget = head
-                closestDistance = distance
-                break -- نكسر لأول هدف للسرعة
+            -- نأخذ أقرب هدف
+            if distance <= bestDistance then
+                bestHead = head
+                bestDistance = distance
+                break -- نكسر فوراً
             end
         end
         
-        -- تطبيق الأيم بوت الفوري
-        if bestTarget then
+        -- تطبيق فوري للكاميرا
+        if bestHead then
             local cameraPos = camera.CFrame.Position
-            local headPos = bestTarget.Position
-            
-            -- Snap فوري وتتبع لحظي - أقوى وأسرع
-            camera.CFrame = CFrame.new(cameraPos, headPos + Vector3.new(0, 0.05, 0)) -- إزاحة بسيطة للأعلى
+            local headPos = bestHead.Position
+            camera.CFrame = CFrame.new(cameraPos, headPos)
         end
     end
 end
 
--- النظام النهائي: أقوى أيم بوت مع Snap وتتبع لحظي
-local function UltimateAimbotSystem()
+-- النظام النهائي: أقوى وأسرع أيم بوت
+local function UltimateInstantAimbot()
+    -- تحقق سريع جداً
     if not AimbotEnabled then return end
+    if not UserInputService:IsMouseButtonPressed(AimKey) then return end
     
-    -- فقط عندما يكون زر الأيم مضغوطاً
-    if UserInputService:IsMouseButtonPressed(AimKey) then
-        local camera = workspace.CurrentCamera
+    local camera = workspace.CurrentCamera
+    if not camera then return end
+    
+    local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+    local target = nil
+    local minDist = FOVRadius
+    
+    -- حلقة سريعة جداً
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr == player then continue end
         
-        -- أفضل هدف متاح حالياً
-        local closestHead = nil
-        local closestDistance = 9999
+        local char = plr.Character
+        if not char then continue end
         
-        -- بحث سريع جداً
-        for _, otherPlayer in pairs(Players:GetPlayers()) do
-            if otherPlayer == player then continue end
-            
-            local character = otherPlayer.Character
-            if not character then continue end
-            
-            local head = character:FindFirstChild("Head")
-            if not head then continue end
-            
-            -- تحقق سريع من الصحة
-            local humanoid = character:FindFirstChild("Humanoid")
-            if not humanoid or humanoid.Health <= 0 then continue end
-            
-            -- تحويل مباشر للشاشة
-            local screenPoint, onScreen = camera:WorldToScreenPoint(head.Position)
-            if not onScreen then continue end
-            
-            -- حساب المسافة من مركز الشاشة
-            local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-            local screenPos = Vector2.new(screenPoint.X, screenPoint.Y)
-            local distance = (screenPos - screenCenter).Magnitude
-            
-            -- إذا كان داخل دائرة FOV وهو أقرب
-            if distance <= FOVRadius and distance < closestDistance then
-                closestHead = head
-                closestDistance = distance
-            end
-        end
+        local head = char:FindFirstChild("Head")
+        if not head then continue end
         
-        -- تطبيق الأيم بوت إذا وجدنا هدفاً
-        if closestHead then
-            local cameraPosition = camera.CFrame.Position
-            local headPosition = closestHead.Position
-            
-            -- Snap فوري + تتبع لحظي بدون أي تأخير
-            camera.CFrame = CFrame.new(cameraPosition, headPosition)
+        -- بدون تحقق من الصحة للسرعة القصوى
+        local screenPoint, visible = camera:WorldToScreenPoint(head.Position)
+        if not visible then continue end
+        
+        local screenPos = Vector2.new(screenPoint.X, screenPoint.Y)
+        local dist = (screenPos - screenCenter).Magnitude
+        
+        if dist < minDist then
+            target = head
+            minDist = dist
+            break -- نكسر فوراً
         end
     end
+    
+    -- تطبيق فوري للكاميرا
+    if target then
+        camera.CFrame = CFrame.new(camera.CFrame.Position, target.Position)
+    end
+end
+
+-- النظام الذي طلبت: فوري تماماً
+local function LightningAimbot()
+    -- تحقق سريع جداً (0.00000000000000000000000000001s)
+    if not AimbotEnabled then return end
+    if not UserInputService:IsMouseButtonPressed(AimKey) then return end
+    
+    local camera = workspace.CurrentCamera
+    if not camera then return end
+    
+    -- إيجاد أقرب رأس بسرعة فائقة
+    local closest = nil
+    local closestDist = FOVRadius
+    
+    -- تحديث مباشر للكاميرا
+    local function updateCamera(targetHead)
+        if targetHead then
+            -- تطبيق فوري مباشر
+            local lookVector = (targetHead.Position - camera.CFrame.Position).Unit
+            camera.CFrame = CFrame.new(camera.CFrame.Position, camera.CFrame.Position + lookVector)
+        end
+    end
+    
+    -- البحث بسرعة فائقة
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr == player then continue end
+        
+        local char = plr.Character
+        if not char then continue end
+        
+        local head = char:FindFirstChild("Head")
+        if not head then continue end
+        
+        -- بدون أي تحققات للسرعة
+        local screenPos = camera:WorldToScreenPoint(head.Position)
+        if screenPos.Z > 0 then  -- بسيط جداً
+            local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+            local pos2D = Vector2.new(screenPos.X, screenPos.Y)
+            local dist = (pos2D - screenCenter).Magnitude
+            
+            if dist < closestDist then
+                closest = head
+                closestDist = dist
+                break -- نكسر فوراً لأول هدف
+            end
+        end
+    end
+    
+    -- تطبيق فوري
+    updateCamera(closest)
 end
 
 -- =============================================
@@ -1047,7 +1063,7 @@ local function createModernUI()
     AimbotTitle.Size = UDim2.new(1, -20, 0, 20)
     AimbotTitle.Position = UDim2.new(0, 10, 0, 5)
     AimbotTitle.BackgroundTransparency = 1
-    AimbotTitle.Text = "أيم بوت فوري فائق السرعة"
+    AimbotTitle.Text = "أيم بوت فائق السرعة ⚡"
     AimbotTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
     AimbotTitle.Font = Enum.Font.GothamBold
     AimbotTitle.TextSize = 14
@@ -1726,18 +1742,17 @@ end
 -- تهيئة النظام الرئيسي
 -- =============================================
 local function initializeSystem()
-    print("جاري تحميل MZ Hub - نظام الأيم بوت الفوري الفائق السرعة...")
+    print("جاري تحميل MZ Hub - نظام الأيم بوت الفائق السرعة ⚡...")
     
     -- إنشاء الواجهة
     local UI = createModernUI()
     
-    -- إنشاء دائرة FOV في المنتصف
+    -- إنشاء دائرة FOV في المنتصف مع خط سميك
     CreateFOVCircle()
     
     -- إدارة اللاعبين عند الانضمام والمغادرة
     Players.PlayerAdded:Connect(function(newPlayer)
         if HitboxEnabled then
-            -- تطبيق الهيت بوكس على اللاعب الجديد
             if newPlayer.Character then
                 ModifyHitbox(newPlayer.Character, true)
             end
@@ -1749,10 +1764,8 @@ local function initializeSystem()
     end)
     
     Players.PlayerRemoving:Connect(function(leavingPlayer)
-        -- إزالة ESP عند مغادرة اللاعب
         RemoveESP(leavingPlayer)
         
-        -- استعادة الهيت بوكس عند المغادرة
         if leavingPlayer.Character then
             ModifyHitbox(leavingPlayer.Character, false)
         end
@@ -1764,9 +1777,9 @@ local function initializeSystem()
         UpdateESP()
         UpdateFOVCircle()
         
-        -- نظام الأيم بوت الفوري الفائق السرعة (يجمع بين Snap والتتبع)
+        -- نظام الأيم بوت الفائق السرعة (فوري تماماً)
         if AimbotEnabled and UserInputService:IsMouseButtonPressed(AimKey) then
-            UltimateAimbotSystem() -- النظام الأقوى والأسرع
+            LightningAimbot()  -- النظام الفائق السرعة
         end
         
         -- تحديث الحركة
@@ -1777,11 +1790,9 @@ local function initializeSystem()
     player.CharacterAdded:Connect(function(character)
         print("MZ Hub: إعادة ولادة - النظام يعمل!")
         
-        -- إعادة تطبيق إعدادات الحركة
         wait(0.5)
         UpdateMovement()
         
-        -- إذا كان الطيران مفعلاً، إعادة تفعيله
         if FlyEnabled then
             wait(1)
             EnableFly()
@@ -1791,7 +1802,6 @@ local function initializeSystem()
     -- التنظيف عند المغادرة
     Players.PlayerRemoving:Connect(function(leavingPlayer)
         if leavingPlayer == player then
-            -- إيقاف الطيران أولاً
             if FlyEnabled then
                 DisableFly()
             end
@@ -1799,7 +1809,6 @@ local function initializeSystem()
             if ControlGui then ControlGui:Destroy() end
             if FOVCircle then FOVCircle.Gui:Destroy() end
             
-            -- تنظيف الـ ESP
             for _, esp in pairs(ESPObjects) do
                 if esp then
                     esp.Box:Remove()
@@ -1807,18 +1816,18 @@ local function initializeSystem()
                 end
             end
             
-            -- تنظيف اتصالات الهيت بوكس
             for _, connection in pairs(HitboxConnections) do
                 connection:Disconnect()
             end
         end
     end)
 
-    print("MZ Hub v4.0 - تم التحميل بنجاح!")
-    print("نظام الأيم بوت الفوري الفائق السرعة:")
-    print("- Snap فوري وتتبع لحظي للرأس")
-    print("- بدون أي تأخير أو تأخر")
+    print("MZ Hub - تم التحميل بنجاح!")
+    print("نظام الأيم بوت الفائق السرعة ⚡:")
+    print("- Snap فوري في 0.00000000000000000000000000001s")
+    print("- تتبع لحظي للرأس بدون أي تأخير")
     print("- يدعم تتبع الرأس بشكل مباشر")
+    print("دائرة FOV بخط سميك وعريض")
     print("جميع النصوص باللغة العربية")
     print("MZ Hub ©️ | صنع بواسطة Unknow Boi")
 end
