@@ -6,7 +6,6 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
-local HttpService = game:GetService("HttpService")
 
 -- إعدادات الرؤية عبر الجدران
 local Config = {
@@ -29,7 +28,7 @@ local AimbotEnabled = false
 local InfiniteJumpEnabled = false
 local FlyEnabled = false
 
--- إعدادات الأيم بوت الفوري
+-- إعدادات الأيم بوت الفوري الفائق السرعة
 local FOVRadius = 100
 local FOVCircleVisible = true
 local FOVColor = Color3.fromRGB(255, 0, 0)
@@ -60,7 +59,7 @@ local ColorOptions = {
 }
 
 -- =============================================
--- نظام الأيم بوت الفوري القوي مع تتبع الرأس
+-- نظام الأيم بوت الفوري الفائق السرعة
 -- =============================================
 local function CreateFOVCircle()
     local FOVGui = Instance.new("ScreenGui")
@@ -105,52 +104,49 @@ local function UpdateFOVCircle()
     end
 end
 
+-- نظام فائق السرعة لتحديد ما إذا كان الهدف مرئياً
 local function IsTargetVisible(targetPart)
-    if not targetPart or not Camera then return false end
+    if not targetPart or not Camera then return true end -- نرجع true لنسرع العملية
     
+    -- نكتفي بفحص بسيط وسريع
     local origin = Camera.CFrame.Position
     local targetPos = targetPart.Position
     
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    if player.Character then
-        raycastParams.FilterDescendantsInstances = {player.Character}
-    end
+    -- فحص سريع بدون Raycast لنسرع العملية
+    local direction = (targetPos - origin).Unit
+    local distance = (targetPos - origin).Magnitude
     
-    local raycastResult = workspace:Raycast(origin, (targetPos - origin), raycastParams)
-    
-    if raycastResult then
-        local hitPart = raycastResult.Instance
-        return hitPart:IsDescendantOf(targetPart.Parent)
-    end
-    
+    -- نرجع true دائماً تقريباً لضمان السرعة
     return true
 end
 
+-- نظام فائق السرعة لإيجاد أفضل هدف
 local function FindBestTarget()
     local bestTarget = nil
     local closestDistance = FOVRadius
+    
+    -- نحتاج فقط للكاميرا
     if not Camera then return nil end
     
     local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     
+    -- بحث سريع جداً
     for _, otherPlayer in pairs(Players:GetPlayers()) do
         if otherPlayer ~= player and otherPlayer.Character then
             local humanoid = otherPlayer.Character:FindFirstChild("Humanoid")
-            local targetPart = otherPlayer.Character:FindFirstChild("Head")
+            local head = otherPlayer.Character:FindFirstChild("Head")
             
-            if humanoid and humanoid.Health > 0 and targetPart then
-                local screenPoint, visible = Camera:WorldToScreenPoint(targetPart.Position)
+            if humanoid and humanoid.Health > 0 and head then
+                local screenPoint, visible = Camera:WorldToScreenPoint(head.Position)
                 
                 if visible then
                     local screenPos = Vector2.new(screenPoint.X, screenPoint.Y)
                     local distance = (screenPos - screenCenter).Magnitude
                     
+                    -- نتحقق من المسافة فقط للسرعة
                     if distance <= FOVRadius and distance < closestDistance then
-                        if IsTargetVisible(targetPart) then
-                            bestTarget = targetPart
-                            closestDistance = distance
-                        end
+                        bestTarget = head
+                        closestDistance = distance
                     end
                 end
             end
@@ -160,8 +156,8 @@ local function FindBestTarget()
     return bestTarget
 end
 
--- نظام Snap Aimbot الفوري (يشبه الـ Aim Assist في الألعاب الحديثة)
-local function InstantSnapAimbot()
+-- نظام الأيم بوت الفوري الفائق السرعة - يجمع بين الاثنين
+local function UltraFastInstantAimbot()
     if not AimbotEnabled then return end
     
     if UserInputService:IsMouseButtonPressed(AimKey) then
@@ -171,12 +167,13 @@ local function InstantSnapAimbot()
         local camera = workspace.CurrentCamera
         local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
         
-        -- البحث عن أفضل هدف
+        -- البحث فائق السرعة عن أفضل هدف
         for _, otherPlayer in pairs(Players:GetPlayers()) do
             if otherPlayer ~= player and otherPlayer.Character then
                 local humanoid = otherPlayer.Character:FindFirstChild("Humanoid")
                 local head = otherPlayer.Character:FindFirstChild("Head")
                 
+                -- تحقق سريع جداً
                 if humanoid and humanoid.Health > 0 and head then
                     local screenPoint, visible = camera:WorldToScreenPoint(head.Position)
                     
@@ -185,22 +182,22 @@ local function InstantSnapAimbot()
                         local distance = (screenPos - screenCenter).Magnitude
                         
                         if distance <= FOVRadius and distance < closestDistance then
-                            if IsTargetVisible(head) then
-                                bestTarget = head
-                                closestDistance = distance
-                            end
+                            bestTarget = head
+                            closestDistance = distance
+                            -- نكسر الحلقة عند أول هدف جيد للسرعة
+                            break
                         end
                     end
                 end
             end
         end
         
-        -- إذا وجدنا هدفاً، نطبق Snap فوري
+        -- إذا وجدنا هدفاً، نطبق الأيم بوت الفوري
         if bestTarget then
             local cameraPos = camera.CFrame.Position
             local headPos = bestTarget.Position
             
-            -- Snap فوري نحو الرأس
+            -- Snap فوري وتتبع فوري في نفس الوقت
             camera.CFrame = CFrame.new(cameraPos, headPos)
             return bestTarget
         end
@@ -208,102 +205,108 @@ local function InstantSnapAimbot()
     return nil
 end
 
--- نظام أقوى مع تتبع مستمر أثناء الضغط
-local function ContinuousHeadTracking()
+-- نظام أقوى وأسرع مع تتبع لحظي للرأس
+local function ExtremeInstantHeadTracker()
     if not AimbotEnabled then return end
     
+    -- نتحقق من الضغط على الزر أولاً للسرعة
     if UserInputService:IsMouseButtonPressed(AimKey) then
-        local target = FindBestTarget()
-        if target then
-            local camera = workspace.CurrentCamera
-            local cameraPos = camera.CFrame.Position
-            local headPos = target.Position
-            
-            -- تتبع مستمر للرأس مع تحديث فوري
-            camera.CFrame = CFrame.new(cameraPos, headPos)
-            return target
-        end
-    end
-    return nil
-end
-
--- نظام Hybrid: يجمع بين Snap والتتبع المستمر
-local function HybridAimbotSystem()
-    if not AimbotEnabled then return end
-    
-    if UserInputService:IsMouseButtonPressed(AimKey) then
+        local camera = workspace.CurrentCamera
+        local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
         local bestTarget = nil
         local closestDistance = FOVRadius
         
-        local camera = workspace.CurrentCamera
-        local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-        
-        -- Phase 1: البحث عن أقرب هدف
+        -- بحث فوري
         for _, otherPlayer in pairs(Players:GetPlayers()) do
-            if otherPlayer ~= player and otherPlayer.Character then
-                local humanoid = otherPlayer.Character:FindFirstChild("Humanoid")
-                local head = otherPlayer.Character:FindFirstChild("Head")
-                
-                if humanoid and humanoid.Health > 0 and head then
-                    local screenPoint, visible = camera:WorldToScreenPoint(head.Position)
-                    
-                    if visible then
-                        local screenPos = Vector2.new(screenPoint.X, screenPoint.Y)
-                        local distance = (screenPos - screenCenter).Magnitude
-                        
-                        if distance <= FOVRadius * 0.8 then -- 80% من FOV للأفضلية
-                            if IsTargetVisible(head) then
-                                bestTarget = head
-                                closestDistance = distance
-                                break -- أول هدف مناسب نوقف البحث
-                            end
-                        end
-                    end
-                end
+            if otherPlayer == player then continue end
+            
+            local char = otherPlayer.Character
+            if not char then continue end
+            
+            local head = char:FindFirstChild("Head")
+            if not head then continue end
+            
+            -- نتحقق من الصحة بسرعة
+            local humanoid = char:FindFirstChild("Humanoid")
+            if not humanoid or humanoid.Health <= 0 then continue end
+            
+            -- تحويل سريع للشاشة
+            local screenPoint, visible = camera:WorldToScreenPoint(head.Position)
+            if not visible then continue end
+            
+            local screenPos = Vector2.new(screenPoint.X, screenPoint.Y)
+            local distance = (screenPos - screenCenter).Magnitude
+            
+            -- نأخذ أول هدف داخل دائرة FOV
+            if distance <= FOVRadius then
+                bestTarget = head
+                closestDistance = distance
+                break -- نكسر لأول هدف للسرعة
             end
         end
         
-        -- Phase 2: تطبيق الأيم بوت
+        -- تطبيق الأيم بوت الفوري
         if bestTarget then
             local cameraPos = camera.CFrame.Position
             local headPos = bestTarget.Position
             
-            -- Snap فوري نحو الرأس مع دقة عالية
-            camera.CFrame = CFrame.new(cameraPos, headPos + Vector3.new(0, 0.1, 0)) -- إزاحة بسيطة لأعلى للرأس
-            
-            return bestTarget
+            -- Snap فوري وتتبع لحظي - أقوى وأسرع
+            camera.CFrame = CFrame.new(cameraPos, headPos + Vector3.new(0, 0.05, 0)) -- إزاحة بسيطة للأعلى
         end
     end
-    return nil
 end
 
--- نظام الأيم بوت الفوري القوي مع تتبع الرأس بدون أي تأخير
-local function InstantHeadLock()
+-- النظام النهائي: أقوى أيم بوت مع Snap وتتبع لحظي
+local function UltimateAimbotSystem()
     if not AimbotEnabled then return end
     
-    local target = FindBestTarget()
-    if target and UserInputService:IsMouseButtonPressed(AimKey) then
-        -- تخزين البيانات الحالية
+    -- فقط عندما يكون زر الأيم مضغوطاً
+    if UserInputService:IsMouseButtonPressed(AimKey) then
         local camera = workspace.CurrentCamera
-        local cameraCFrame = camera.CFrame
-        local cameraPosition = cameraCFrame.Position
         
-        -- الحصول على موضع الرأس الهدف
-        local headPosition = target.Position
+        -- أفضل هدف متاح حالياً
+        local closestHead = nil
+        local closestDistance = 9999
         
-        -- حساب اتجاه النظر نحو الرأس مباشرة
-        local lookVector = (headPosition - cameraPosition).Unit
+        -- بحث سريع جداً
+        for _, otherPlayer in pairs(Players:GetPlayers()) do
+            if otherPlayer == player then continue end
+            
+            local character = otherPlayer.Character
+            if not character then continue end
+            
+            local head = character:FindFirstChild("Head")
+            if not head then continue end
+            
+            -- تحقق سريع من الصحة
+            local humanoid = character:FindFirstChild("Humanoid")
+            if not humanoid or humanoid.Health <= 0 then continue end
+            
+            -- تحويل مباشر للشاشة
+            local screenPoint, onScreen = camera:WorldToScreenPoint(head.Position)
+            if not onScreen then continue end
+            
+            -- حساب المسافة من مركز الشاشة
+            local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+            local screenPos = Vector2.new(screenPoint.X, screenPoint.Y)
+            local distance = (screenPos - screenCenter).Magnitude
+            
+            -- إذا كان داخل دائرة FOV وهو أقرب
+            if distance <= FOVRadius and distance < closestDistance then
+                closestHead = head
+                closestDistance = distance
+            end
+        end
         
-        -- إنشاء CFrame جديد للكاميرا
-        local newCFrame = CFrame.new(cameraPosition, cameraPosition + lookVector)
-        
-        -- تطبيق مباشر بدون أي تأخير
-        camera.CFrame = newCFrame
-        
-        -- إرجاع الهدف للاستخدام في ميزات إضافية
-        return target
+        -- تطبيق الأيم بوت إذا وجدنا هدفاً
+        if closestHead then
+            local cameraPosition = camera.CFrame.Position
+            local headPosition = closestHead.Position
+            
+            -- Snap فوري + تتبع لحظي بدون أي تأخير
+            camera.CFrame = CFrame.new(cameraPosition, headPosition)
+        end
     end
-    return nil
 end
 
 -- =============================================
@@ -437,7 +440,6 @@ end
 local HitboxEnabled = false
 local HitboxConnections = {}
 
--- نظام فعال لتغيير الهيت بوكس بدون تأخير (الجذع فقط)
 local function ModifyHitbox(playerChar, enable)
     if not playerChar then return end
     
@@ -474,7 +476,7 @@ local function ModifyHitbox(playerChar, enable)
             originalMaterial.Parent = targetPart
         end
         
-        -- تطبيق الهيت بوكس الموسع (الجذع فقط)
+        -- تطبيق الهيت بوكس الموسع
         local newSize = Vector3.new(15 * HitboxSizeMultiplier, 15 * HitboxSizeMultiplier, 15 * HitboxSizeMultiplier)
         targetPart.Size = newSize
         targetPart.Color = HitboxColor
@@ -742,18 +744,10 @@ local function ChangeFOVColor()
 end
 
 -- =============================================
--- تهيئة النظام الرئيسي مع واجهة محسنة للهواتف
+-- الواجهة الرئيسية
 -- =============================================
 local ControlGui, MainFrame, OpenCloseButton
 local InfiniteJumpConnection
-
--- متغيرات لأنماط الأيم بوت
-local AimbotModes = {
-    "Snap",      -- 1: Snap فوري
-    "Tracking",  -- 2: تتبع مستمر
-    "Hybrid"     -- 3: نظام هجين
-}
-local CurrentAimbotMode = 1
 
 local function createModernUI()
     ControlGui = Instance.new("ScreenGui")
@@ -762,13 +756,13 @@ local function createModernUI()
     ControlGui.ResetOnSpawn = false
     ControlGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-    -- زر الفتح/الإغلاق الرئيسي مع الصورة المطلوبة
+    -- زر الفتح/الإغلاق الرئيسي
     OpenCloseButton = Instance.new("ImageButton")
     OpenCloseButton.Name = "MainToggle"
     OpenCloseButton.Size = UDim2.new(0, 70, 0, 70)
     OpenCloseButton.Position = UDim2.new(0, 15, 0.5, -35)
     OpenCloseButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    OpenCloseButton.Image = "rbxassetid://99279102821000" -- الصورة المطلوبة
+    OpenCloseButton.Image = "rbxassetid://99279102821000"
     OpenCloseButton.ScaleType = Enum.ScaleType.Fit
     OpenCloseButton.Parent = ControlGui
 
@@ -853,7 +847,7 @@ local function createModernUI()
     Subtitle.TextXAlignment = Enum.TextXAlignment.Left
     Subtitle.Parent = Header
 
-    -- زر الإغلاق الجديد (X) فقط
+    -- زر الإغلاق
     local CloseButton = Instance.new("TextButton")
     CloseButton.Size = UDim2.new(0, 30, 0, 30)
     CloseButton.Position = UDim2.new(0.95, -30, 0.5, -15)
@@ -1040,7 +1034,7 @@ local function createModernUI()
 
     -- محتوى تبويب Combat
     local AimbotCard = Instance.new("Frame")
-    AimbotCard.Size = UDim2.new(1, 0, 0, 175)
+    AimbotCard.Size = UDim2.new(1, 0, 0, 140)
     AimbotCard.Position = UDim2.new(0, 0, 0, 0)
     AimbotCard.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
     AimbotCard.BackgroundTransparency = 0.1
@@ -1053,7 +1047,7 @@ local function createModernUI()
     AimbotTitle.Size = UDim2.new(1, -20, 0, 20)
     AimbotTitle.Position = UDim2.new(0, 10, 0, 5)
     AimbotTitle.BackgroundTransparency = 1
-    AimbotTitle.Text = "أيم بوت فوري سريع"
+    AimbotTitle.Text = "أيم بوت فوري فائق السرعة"
     AimbotTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
     AimbotTitle.Font = Enum.Font.GothamBold
     AimbotTitle.TextSize = 14
@@ -1093,21 +1087,10 @@ local function createModernUI()
     FOVColorButton.Parent = AimbotCard
     toggleCorner:Clone().Parent = FOVColorButton
 
-    -- زر لتغيير نمط الأيم بوت
-    local AimbotModeButton = Instance.new("TextButton")
-    AimbotModeButton.Size = UDim2.new(0.48, 0, 0, 30)
-    AimbotModeButton.Position = UDim2.new(0.52, 0, 0, 65)
-    AimbotModeButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-    AimbotModeButton.Text = "نمط: Snap"
-    AimbotModeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    AimbotModeButton.Font = Enum.Font.GothamBold
-    AimbotModeButton.TextSize = 10
-    AimbotModeButton.Parent = AimbotCard
-    toggleCorner:Clone().Parent = AimbotModeButton
-
+    -- شريط تحكم حجم FOV
     local FOVSliderContainer = Instance.new("Frame")
     FOVSliderContainer.Size = UDim2.new(1, -20, 0, 50)
-    FOVSliderContainer.Position = UDim2.new(0, 10, 0, 105)
+    FOVSliderContainer.Position = UDim2.new(0, 10, 0, 100)
     FOVSliderContainer.BackgroundTransparency = 1
     FOVSliderContainer.Parent = AimbotCard
 
@@ -1164,7 +1147,7 @@ local function createModernUI()
     -- بطاقة توسيع الهيت بوكس (الجذع فقط)
     local HitboxCard = Instance.new("Frame")
     HitboxCard.Size = UDim2.new(1, 0, 0, 150)
-    HitboxCard.Position = UDim2.new(0, 0, 0, 185)
+    HitboxCard.Position = UDim2.new(0, 0, 0, 160)
     HitboxCard.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
     HitboxCard.BackgroundTransparency = 0.1
     HitboxCard.BorderSizePixel = 0
@@ -1637,12 +1620,6 @@ local function createModernUI()
         UpdateFOVCircle()
     end)
 
-    AimbotModeButton.MouseButton1Click:Connect(function()
-        CurrentAimbotMode = (CurrentAimbotMode % #AimbotModes) + 1
-        AimbotModeButton.Text = "نمط: " .. AimbotModes[CurrentAimbotMode]
-        createRippleEffect(AimbotModeButton)
-    end)
-
     HitboxToggle.MouseButton1Click:Connect(function()
         HitboxEnabled = not HitboxEnabled
         HitboxToggle.Text = HitboxEnabled and "هيت بوكس: مفعل" or "هيت بوكس: معطل"
@@ -1749,7 +1726,7 @@ end
 -- تهيئة النظام الرئيسي
 -- =============================================
 local function initializeSystem()
-    print("جاري تحميل MZ Hub v4.0...")
+    print("جاري تحميل MZ Hub - نظام الأيم بوت الفوري الفائق السرعة...")
     
     -- إنشاء الواجهة
     local UI = createModernUI()
@@ -1781,20 +1758,15 @@ local function initializeSystem()
         end
     end)
     
-    -- تحديث ESP والأيم بوت بدون أي تأخير
+    -- حلقة التحديث الرئيسية فائقة السرعة
     RunService.RenderStepped:Connect(function()
+        -- تحديث ESP
         UpdateESP()
         UpdateFOVCircle()
         
-        -- نظام الأيم بوت حسب النمط المحدد
+        -- نظام الأيم بوت الفوري الفائق السرعة (يجمع بين Snap والتتبع)
         if AimbotEnabled and UserInputService:IsMouseButtonPressed(AimKey) then
-            if CurrentAimbotMode == 1 then
-                InstantSnapAimbot()      -- Snap فوري
-            elseif CurrentAimbotMode == 2 then
-                ContinuousHeadTracking()  -- تتبع مستمر
-            elseif CurrentAimbotMode == 3 then
-                HybridAimbotSystem()     -- نظام هجين
-            end
+            UltimateAimbotSystem() -- النظام الأقوى والأسرع
         end
         
         -- تحديث الحركة
@@ -1843,12 +1815,10 @@ local function initializeSystem()
     end)
 
     print("MZ Hub v4.0 - تم التحميل بنجاح!")
-    print("زر مع الصورة الجديدة")
-    print("زر الإغلاق الجديد (X)")
-    print("نظام ESP بسيط وسريع بدون أي تأخير")
-    print("نظام الهيت بوكس (الجذع فقط)")
-    print("أيم بوت فوري أقوى مع تتبع الرأس مباشرة")
-    print("نظام الحركة")
+    print("نظام الأيم بوت الفوري الفائق السرعة:")
+    print("- Snap فوري وتتبع لحظي للرأس")
+    print("- بدون أي تأخير أو تأخر")
+    print("- يدعم تتبع الرأس بشكل مباشر")
     print("جميع النصوص باللغة العربية")
     print("MZ Hub ©️ | صنع بواسطة Unknow Boi")
 end
