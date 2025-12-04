@@ -60,172 +60,6 @@ local ColorOptions = {
 }
 
 -- =============================================
--- وظيفة الإشعار الترحيبي الجميل
--- =============================================
-local function ShowWelcomeNotification()
-    local NotificationGui = Instance.new("ScreenGui")
-    NotificationGui.Name = "WelcomeNotification"
-    NotificationGui.Parent = CoreGui
-    NotificationGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
-    -- الإطار الرئيسي
-    local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 400, 0, 200)
-    MainFrame.Position = UDim2.new(0.5, -200, 0.3, -100)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
-    MainFrame.BackgroundTransparency = 0.1
-    MainFrame.BorderSizePixel = 0
-    MainFrame.Parent = NotificationGui
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 20)
-    corner.Parent = MainFrame
-
-    -- تأثير التدرج
-    local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 25, 40)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 20, 35))
-    })
-    gradient.Parent = MainFrame
-
-    -- تأثير الظل
-    local shadow = Instance.new("UIStroke")
-    shadow.Color = Color3.fromRGB(0, 150, 255)
-    shadow.Thickness = 3
-    shadow.Transparency = 0.3
-    shadow.Parent = MainFrame
-
-    -- صورة المستخدم
-    local UserImage = Instance.new("ImageLabel")
-    UserImage.Size = UDim2.new(0, 80, 0, 80)
-    UserImage.Position = UDim2.new(0.5, -40, 0, 20)
-    UserImage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    UserImage.BorderSizePixel = 0
-    UserImage.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. player.UserId .. "&width=420&height=420&format=png"
-    UserImage.Parent = MainFrame
-
-    local imageCorner = Instance.new("UICorner")
-    imageCorner.CornerRadius = UDim.new(1, 0)
-    imageCorner.Parent = UserImage
-
-    local imageStroke = Instance.new("UIStroke")
-    imageStroke.Color = Color3.fromRGB(0, 200, 255)
-    imageStroke.Thickness = 3
-    imageStroke.Parent = UserImage
-
-    -- اسم المستخدم
-    local UsernameLabel = Instance.new("TextLabel")
-    UsernameLabel.Size = UDim2.new(0.8, 0, 0, 30)
-    UsernameLabel.Position = UDim2.new(0.1, 0, 0.5, 0)
-    UsernameLabel.BackgroundTransparency = 1
-    UsernameLabel.Text = player.Name
-    UsernameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    UsernameLabel.Font = Enum.Font.GothamBold
-    UsernameLabel.TextSize = 18
-    UsernameLabel.TextXAlignment = Enum.TextXAlignment.Center
-    UsernameLabel.Parent = MainFrame
-
-    -- النص الترحيبي
-    local WelcomeLabel = Instance.new("TextLabel")
-    WelcomeLabel.Size = UDim2.new(0.8, 0, 0, 60)
-    WelcomeLabel.Position = UDim2.new(0.1, 0, 0.65, 0)
-    WelcomeLabel.BackgroundTransparency = 1
-    WelcomeLabel.Text = "🎉 مرحبًا بعودتك أيها المستخدم!\nاستمتع بسكربت MZ Hub 🚀"
-    WelcomeLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
-    WelcomeLabel.Font = Enum.Font.GothamBold
-    WelcomeLabel.TextSize = 16
-    WelcomeLabel.TextXAlignment = Enum.TextXAlignment.Center
-    WelcomeLabel.TextYAlignment = Enum.TextYAlignment.Top
-    WelcomeLabel.Parent = MainFrame
-
-    -- حقوق النشر
-    local CopyrightLabel = Instance.new("TextLabel")
-    CopyrightLabel.Size = UDim2.new(0.8, 0, 0, 20)
-    CopyrightLabel.Position = UDim2.new(0.1, 0, 0.9, 0)
-    CopyrightLabel.BackgroundTransparency = 1
-    CopyrightLabel.Text = "MZ Hub ©️ | صنع بواسطة Unknow Boi"
-    CopyrightLabel.TextColor3 = Color3.fromRGB(150, 150, 200)
-    CopyrightLabel.Font = Enum.Font.Gotham
-    CopyrightLabel.TextSize = 12
-    CopyrightLabel.TextXAlignment = Enum.TextXAlignment.Center
-    CopyrightLabel.Parent = MainFrame
-
-    -- تأثيرات الظهور
-    MainFrame.Position = UDim2.new(0.5, -200, 0.2, -100)
-    MainFrame.BackgroundTransparency = 1
-    UserImage.ImageTransparency = 1
-    UsernameLabel.TextTransparency = 1
-    WelcomeLabel.TextTransparency = 1
-    CopyrightLabel.TextTransparency = 1
-
-    -- تأثير الظهور
-    local appearTween = TweenService:Create(MainFrame, TweenInfo.new(0.8, Enum.EasingStyle.Quint), {
-        Position = UDim2.new(0.5, -200, 0.3, -100),
-        BackgroundTransparency = 0.1
-    })
-    
-    local textTween = TweenService:Create(WelcomeLabel, TweenInfo.new(1, Enum.EasingStyle.Quint), {
-        TextTransparency = 0
-    })
-    
-    local imageTween = TweenService:Create(UserImage, TweenInfo.new(0.8, Enum.EasingStyle.Quint), {
-        ImageTransparency = 0
-    })
-    
-    local nameTween = TweenService:Create(UsernameLabel, TweenInfo.new(0.8, Enum.EasingStyle.Quint), {
-        TextTransparency = 0
-    })
-    
-    local copyrightTween = TweenService:Create(CopyrightLabel, TweenInfo.new(0.8, Enum.EasingStyle.Quint), {
-        TextTransparency = 0
-    })
-
-    -- تشغيل تأثيرات الظهور
-    appearTween:Play()
-    wait(0.3)
-    imageTween:Play()
-    wait(0.2)
-    nameTween:Play()
-    wait(0.2)
-    textTween:Play()
-    copyrightTween:Play()
-
-    -- إزالة الإشعار بعد 5 ثواني
-    wait(5)
-    
-    local disappearTween = TweenService:Create(MainFrame, TweenInfo.new(0.8, Enum.EasingStyle.Quint), {
-        Position = UDim2.new(0.5, -200, 0.2, -100),
-        BackgroundTransparency = 1
-    })
-    
-    local textDisappear = TweenService:Create(WelcomeLabel, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {
-        TextTransparency = 1
-    })
-    
-    local imageDisappear = TweenService:Create(UserImage, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {
-        ImageTransparency = 1
-    })
-    
-    local nameDisappear = TweenService:Create(UsernameLabel, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {
-        TextTransparency = 1
-    })
-    
-    local copyrightDisappear = TweenService:Create(CopyrightLabel, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {
-        TextTransparency = 1
-    })
-
-    textDisappear:Play()
-    imageDisappear:Play()
-    nameDisappear:Play()
-    copyrightDisappear:Play()
-    disappearTween:Play()
-
-    wait(1)
-    NotificationGui:Destroy()
-end
-
--- =============================================
 -- نظام الأيم بوت السريع جداً مع دائرة FOV في المنتصف
 -- =============================================
 local function CreateFOVCircle()
@@ -326,7 +160,7 @@ local function FindBestTarget()
     return bestTarget
 end
 
--- أيم بوت سريع جداً بدون أي تأخير - يتابع الرأس مباشرة
+-- أيم بوت سريع جداً بدون أي تأخير
 local function InstantHeadLock(targetPart)
     if not targetPart or not Camera then return end
     
@@ -919,7 +753,7 @@ local function createModernUI()
     ESPTab.Size = UDim2.new(0.32, 0, 1, 0)
     ESPTab.Position = UDim2.new(0, 0, 0, 0)
     ESPTab.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-    ESPTab.Text = "👁️ ESP"
+    ESPTab.Text = "ESP"
     ESPTab.TextColor3 = Color3.fromRGB(255, 255, 255)
     ESPTab.Font = Enum.Font.GothamBold
     ESPTab.TextSize = 12
@@ -933,7 +767,7 @@ local function createModernUI()
     CombatTab.Size = UDim2.new(0.32, 0, 1, 0)
     CombatTab.Position = UDim2.new(0.33, 0, 0, 0)
     CombatTab.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-    CombatTab.Text = "🎯 قتال"
+    CombatTab.Text = "قتال"
     CombatTab.TextColor3 = Color3.fromRGB(255, 255, 255)
     CombatTab.Font = Enum.Font.GothamBold
     CombatTab.TextSize = 12
@@ -944,7 +778,7 @@ local function createModernUI()
     MovementTab.Size = UDim2.new(0.32, 0, 1, 0)
     MovementTab.Position = UDim2.new(0.66, 0, 0, 0)
     MovementTab.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-    MovementTab.Text = "🏃 حركة"
+    MovementTab.Text = "حركة"
     MovementTab.TextColor3 = Color3.fromRGB(255, 255, 255)
     MovementTab.Font = Enum.Font.GothamBold
     MovementTab.TextSize = 12
@@ -1013,7 +847,7 @@ local function createModernUI()
     ESPTitle.Size = UDim2.new(1, -20, 0, 20)
     ESPTitle.Position = UDim2.new(0, 10, 0, 5)
     ESPTitle.BackgroundTransparency = 1
-    ESPTitle.Text = "👁️ نظام الرؤية البسيط"
+    ESPTitle.Text = "نظام الرؤية البسيط"
     ESPTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
     ESPTitle.Font = Enum.Font.GothamBold
     ESPTitle.TextSize = 14
@@ -1024,7 +858,7 @@ local function createModernUI()
     ESPMainToggle.Size = UDim2.new(0.48, 0, 0, 30)
     ESPMainToggle.Position = UDim2.new(0, 10, 0, 30)
     ESPMainToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-    ESPMainToggle.Text = "🔘 ESP الرئيسي: مفعل"
+    ESPMainToggle.Text = "ESP الرئيسي: مفعل"
     ESPMainToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     ESPMainToggle.Font = Enum.Font.GothamBold
     ESPMainToggle.TextSize = 12
@@ -1038,7 +872,7 @@ local function createModernUI()
     BoxToggle.Size = UDim2.new(0.48, 0, 0, 30)
     BoxToggle.Position = UDim2.new(0.52, 0, 0, 30)
     BoxToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-    BoxToggle.Text = "📦 مربع ESP: مفعل"
+    BoxToggle.Text = "مربع ESP: مفعل"
     BoxToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     BoxToggle.Font = Enum.Font.GothamBold
     BoxToggle.TextSize = 12
@@ -1049,7 +883,7 @@ local function createModernUI()
     NameToggle.Size = UDim2.new(0.48, 0, 0, 30)
     NameToggle.Position = UDim2.new(0, 10, 0, 65)
     NameToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-    NameToggle.Text = "🏷️ أسماء: مفعل"
+    NameToggle.Text = "أسماء: مفعل"
     NameToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     NameToggle.Font = Enum.Font.GothamBold
     NameToggle.TextSize = 12
@@ -1060,7 +894,7 @@ local function createModernUI()
     ESPColorButton.Size = UDim2.new(0.48, 0, 0, 30)
     ESPColorButton.Position = UDim2.new(0.52, 0, 0, 65)
     ESPColorButton.BackgroundColor3 = ESPColor
-    ESPColorButton.Text = "🎨 لون ESP"
+    ESPColorButton.Text = "لون ESP"
     ESPColorButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     ESPColorButton.Font = Enum.Font.GothamBold
     ESPColorButton.TextSize = 12
@@ -1071,7 +905,7 @@ local function createModernUI()
     TeamCheckToggle.Size = UDim2.new(0.48, 0, 0, 30)
     TeamCheckToggle.Position = UDim2.new(0, 10, 0, 100)
     TeamCheckToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-    TeamCheckToggle.Text = "👥 فريق الفحص: مفعل"
+    TeamCheckToggle.Text = "فريق الفحص: مفعل"
     TeamCheckToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     TeamCheckToggle.Font = Enum.Font.GothamBold
     TeamCheckToggle.TextSize = 12
@@ -1093,7 +927,7 @@ local function createModernUI()
     AimbotTitle.Size = UDim2.new(1, -20, 0, 20)
     AimbotTitle.Position = UDim2.new(0, 10, 0, 5)
     AimbotTitle.BackgroundTransparency = 1
-    AimbotTitle.Text = "⚡ أيم بوت فوري سريع"
+    AimbotTitle.Text = "أيم بوت فوري سريع"
     AimbotTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
     AimbotTitle.Font = Enum.Font.GothamBold
     AimbotTitle.TextSize = 14
@@ -1104,7 +938,7 @@ local function createModernUI()
     AimbotToggle.Size = UDim2.new(0.48, 0, 0, 30)
     AimbotToggle.Position = UDim2.new(0, 10, 0, 30)
     AimbotToggle.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-    AimbotToggle.Text = "⚡ أيم بوت: معطل"
+    AimbotToggle.Text = "أيم بوت: معطل"
     AimbotToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     AimbotToggle.Font = Enum.Font.GothamBold
     AimbotToggle.TextSize = 12
@@ -1115,7 +949,7 @@ local function createModernUI()
     FOVToggle.Size = UDim2.new(0.48, 0, 0, 30)
     FOVToggle.Position = UDim2.new(0.52, 0, 0, 30)
     FOVToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-    FOVToggle.Text = "🔴 دائرة: مفعل"
+    FOVToggle.Text = "دائرة: مفعل"
     FOVToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     FOVToggle.Font = Enum.Font.GothamBold
     FOVToggle.TextSize = 12
@@ -1126,7 +960,7 @@ local function createModernUI()
     FOVColorButton.Size = UDim2.new(0.48, 0, 0, 30)
     FOVColorButton.Position = UDim2.new(0, 10, 0, 65)
     FOVColorButton.BackgroundColor3 = FOVColor
-    FOVColorButton.Text = "🎨 لون الدائرة"
+    FOVColorButton.Text = "لون الدائرة"
     FOVColorButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     FOVColorButton.Font = Enum.Font.GothamBold
     FOVColorButton.TextSize = 12
@@ -1148,7 +982,7 @@ local function createModernUI()
     HitboxTitle.Size = UDim2.new(1, -20, 0, 20)
     HitboxTitle.Position = UDim2.new(0, 10, 0, 5)
     HitboxTitle.BackgroundTransparency = 1
-    HitboxTitle.Text = "🎯 توسيع هيت بوكس الجذع"
+    HitboxTitle.Text = "توسيع هيت بوكس الجذع"
     HitboxTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
     HitboxTitle.Font = Enum.Font.GothamBold
     HitboxTitle.TextSize = 14
@@ -1159,7 +993,7 @@ local function createModernUI()
     HitboxToggle.Size = UDim2.new(0.48, 0, 0, 30)
     HitboxToggle.Position = UDim2.new(0, 10, 0, 30)
     HitboxToggle.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-    HitboxToggle.Text = "🎯 هيت بوكس: معطل"
+    HitboxToggle.Text = "هيت بوكس: معطل"
     HitboxToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     HitboxToggle.Font = Enum.Font.GothamBold
     HitboxToggle.TextSize = 12
@@ -1170,7 +1004,7 @@ local function createModernUI()
     HitboxColorButton.Size = UDim2.new(0.48, 0, 0, 30)
     HitboxColorButton.Position = UDim2.new(0.52, 0, 0, 30)
     HitboxColorButton.BackgroundColor3 = HitboxColor
-    HitboxColorButton.Text = "🎨 لون الهيت بوكس"
+    HitboxColorButton.Text = "لون الهيت بوكس"
     HitboxColorButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     HitboxColorButton.Font = Enum.Font.GothamBold
     HitboxColorButton.TextSize = 12
@@ -1249,7 +1083,7 @@ local function createModernUI()
     SpeedTitle.Size = UDim2.new(1, -20, 0, 20)
     SpeedTitle.Position = UDim2.new(0, 10, 0, 5)
     SpeedTitle.BackgroundTransparency = 1
-    SpeedTitle.Text = "🏃 سرعة اللاعب"
+    SpeedTitle.Text = "سرعة اللاعب"
     SpeedTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
     SpeedTitle.Font = Enum.Font.GothamBold
     SpeedTitle.TextSize = 14
@@ -1307,7 +1141,7 @@ local function createModernUI()
     JumpTitle.Size = UDim2.new(1, -20, 0, 20)
     JumpTitle.Position = UDim2.new(0, 10, 0, 5)
     JumpTitle.BackgroundTransparency = 1
-    JumpTitle.Text = "🦘 قوة القفز"
+    JumpTitle.Text = "قوة القفز"
     JumpTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
     JumpTitle.Font = Enum.Font.GothamBold
     JumpTitle.TextSize = 14
@@ -1354,7 +1188,7 @@ local function createModernUI()
     InfiniteJumpToggle.Size = UDim2.new(0.48, 0, 0, 30)
     InfiniteJumpToggle.Position = UDim2.new(0, 10, 0, 70)
     InfiniteJumpToggle.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-    InfiniteJumpToggle.Text = "🔄 قفز لا نهائي: معطل"
+    InfiniteJumpToggle.Text = "قفز لا نهائي: معطل"
     InfiniteJumpToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     InfiniteJumpToggle.Font = Enum.Font.GothamBold
     InfiniteJumpToggle.TextSize = 10
@@ -1365,7 +1199,7 @@ local function createModernUI()
     FlyToggle.Size = UDim2.new(0.48, 0, 0, 30)
     FlyToggle.Position = UDim2.new(0.52, 0, 0, 70)
     FlyToggle.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-    FlyToggle.Text = "✈️ الطيران: معطل"
+    FlyToggle.Text = "الطيران: معطل"
     FlyToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     FlyToggle.Font = Enum.Font.GothamBold
     FlyToggle.TextSize = 10
@@ -1555,7 +1389,7 @@ local function createModernUI()
     -- أحداث أزرار ESP البسيط
     ESPMainToggle.MouseButton1Click:Connect(function()
         ESPEnabled = not ESPEnabled
-        ESPMainToggle.Text = ESPEnabled and "🔘 ESP الرئيسي: مفعل" or "🔘 ESP الرئيسي: معطل"
+        ESPMainToggle.Text = ESPEnabled and "ESP الرئيسي: مفعل" or "ESP الرئيسي: معطل"
         ESPMainToggle.BackgroundColor3 = ESPEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(255, 60, 60)
         createRippleEffect(ESPMainToggle)
         UpdateESP()
@@ -1563,7 +1397,7 @@ local function createModernUI()
 
     BoxToggle.MouseButton1Click:Connect(function()
         Config.BoxESP = not Config.BoxESP
-        BoxToggle.Text = Config.BoxESP and "📦 مربع ESP: مفعل" or "📦 مربع ESP: معطل"
+        BoxToggle.Text = Config.BoxESP and "مربع ESP: مفعل" or "مربع ESP: معطل"
         BoxToggle.BackgroundColor3 = Config.BoxESP and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(255, 60, 60)
         createRippleEffect(BoxToggle)
         UpdateESP()
@@ -1571,7 +1405,7 @@ local function createModernUI()
 
     NameToggle.MouseButton1Click:Connect(function()
         Config.NameESP = not Config.NameESP
-        NameToggle.Text = Config.NameESP and "🏷️ أسماء: مفعل" or "🏷️ أسماء: معطل"
+        NameToggle.Text = Config.NameESP and "أسماء: مفعل" or "أسماء: معطل"
         NameToggle.BackgroundColor3 = Config.NameESP and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(255, 60, 60)
         createRippleEffect(NameToggle)
         UpdateESP()
@@ -1586,7 +1420,7 @@ local function createModernUI()
 
     TeamCheckToggle.MouseButton1Click:Connect(function()
         Config.TeamCheck = not Config.TeamCheck
-        TeamCheckToggle.Text = Config.TeamCheck and "👥 فريق الفحص: مفعل" or "👥 فريق الفحص: معطل"
+        TeamCheckToggle.Text = Config.TeamCheck and "فريق الفحص: مفعل" or "فريق الفحص: معطل"
         TeamCheckToggle.BackgroundColor3 = Config.TeamCheck and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(255, 60, 60)
         createRippleEffect(TeamCheckToggle)
         UpdateESP()
@@ -1594,7 +1428,7 @@ local function createModernUI()
 
     AimbotToggle.MouseButton1Click:Connect(function()
         AimbotEnabled = not AimbotEnabled
-        AimbotToggle.Text = AimbotEnabled and "⚡ أيم بوت: مفعل" or "⚡ أيم بوت: معطل"
+        AimbotToggle.Text = AimbotEnabled and "أيم بوت: مفعل" or "أيم بوت: معطل"
         AimbotToggle.BackgroundColor3 = AimbotEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(255, 60, 60)
         createRippleEffect(AimbotToggle)
         UpdateFOVCircle()
@@ -1602,7 +1436,7 @@ local function createModernUI()
 
     FOVToggle.MouseButton1Click:Connect(function()
         FOVCircleVisible = not FOVCircleVisible
-        FOVToggle.Text = FOVCircleVisible and "🔴 دائرة: مفعل" or "🔴 دائرة: معطل"
+        FOVToggle.Text = FOVCircleVisible and "دائرة: مفعل" or "دائرة: معطل"
         FOVToggle.BackgroundColor3 = FOVCircleVisible and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(255, 60, 60)
         createRippleEffect(FOVToggle)
         UpdateFOVCircle()
@@ -1617,7 +1451,7 @@ local function createModernUI()
 
     HitboxToggle.MouseButton1Click:Connect(function()
         HitboxEnabled = not HitboxEnabled
-        HitboxToggle.Text = HitboxEnabled and "🎯 هيت بوكس: مفعل" or "🎯 هيت بوكس: معطل"
+        HitboxToggle.Text = HitboxEnabled and "هيت بوكس: مفعل" or "هيت بوكس: معطل"
         HitboxToggle.BackgroundColor3 = HitboxEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(255, 60, 60)
         createRippleEffect(HitboxToggle)
         InitializeHitboxes()
@@ -1634,7 +1468,7 @@ local function createModernUI()
 
     InfiniteJumpToggle.MouseButton1Click:Connect(function()
         InfiniteJumpEnabled = not InfiniteJumpEnabled
-        InfiniteJumpToggle.Text = InfiniteJumpEnabled and "🔄 قفز لا نهائي: مفعل" or "🔄 قفز لا نهائي: معطل"
+        InfiniteJumpToggle.Text = InfiniteJumpEnabled and "قفز لا نهائي: مفعل" or "قفز لا نهائي: معطل"
         InfiniteJumpToggle.BackgroundColor3 = InfiniteJumpEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(255, 60, 60)
         createRippleEffect(InfiniteJumpToggle)
         
@@ -1650,7 +1484,7 @@ local function createModernUI()
 
     FlyToggle.MouseButton1Click:Connect(function()
         FlyEnabled = not FlyEnabled
-        FlyToggle.Text = FlyEnabled and "✈️ الطيران: مفعل" or "✈️ الطيران: معطل"
+        FlyToggle.Text = FlyEnabled and "الطيران: مفعل" or "الطيران: معطل"
         FlyToggle.BackgroundColor3 = FlyEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(255, 60, 60)
         createRippleEffect(FlyToggle)
         
@@ -1721,10 +1555,7 @@ end
 -- تهيئة النظام الرئيسي
 -- =============================================
 local function initializeSystem()
-    print("🎮 جاري تحميل MZ Hub v4.0...")
-    
-    -- عرض الإشعار الترحيبي
-    ShowWelcomeNotification()
+    print("جاري تحميل MZ Hub v4.0...")
     
     -- إنشاء الواجهة
     local UI = createModernUI()
@@ -1772,7 +1603,7 @@ local function initializeSystem()
 
     -- التأكد من استمرار العمل بعد الموت
     player.CharacterAdded:Connect(function(character)
-        print("🔄 MZ Hub: إعادة ولادة - النظام يعمل!")
+        print("MZ Hub: إعادة ولادة - النظام يعمل!")
         
         -- إعادة تطبيق إعدادات الحركة
         wait(0.5)
@@ -1811,17 +1642,15 @@ local function initializeSystem()
         end
     end)
 
-    print("🎉 MZ Hub v4.0 - تم التحميل بنجاح!")
-    print("✨ زر مع الصورة الجديدة (ID: 99279102821000)")
-    print("❌ زر الإغلاق الجديد (X)")
-    print("👁️ نظام ESP بسيط وسريع بدون أي تأخير:")
-    print("   📦 Box ESP فقط")
-    print("   🏷️ أسماء اللاعبين")
-    print("🎯 نظام الهيت بوكس (الجذع فقط)")
-    print("⚡⚡ أيم بوت فوري أقوى مع تتبع الرأس مباشرة")
-    print("🏃 نظام الحركة")
-    print("💎 جميع النصوص باللغة العربية")
-    print("💎 MZ Hub ©️ | صنع بواسطة Unknow Boi")
+    print("MZ Hub v4.0 - تم التحميل بنجاح!")
+    print("زر مع الصورة الجديدة")
+    print("زر الإغلاق الجديد (X)")
+    print("نظام ESP بسيط وسريع بدون أي تأخير")
+    print("نظام الهيت بوكس (الجذع فقط)")
+    print("أيم بوت فوري أقوى مع تتبع الرأس مباشرة")
+    print("نظام الحركة")
+    print("جميع النصوص باللغة العربية")
+    print("MZ Hub ©️ | صنع بواسطة Unknow Boi")
 end
 
 -- بدء التشغيل
